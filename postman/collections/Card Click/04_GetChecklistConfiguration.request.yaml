@@ -139,6 +139,15 @@ scripts:
           }
 
           console.log("[GetChecklistConfiguration] All pages done in " + (elapsed / 1000).toFixed(2) + " s. HasFormula=" + hasFormula + " HasInternalTable=" + hasInternalTable + " InternalTableIds=" + JSON.stringify(internalTableIds));
+
+          // Chaining for Runner
+          if (hasFormula) {
+              postman.setNextRequest("05 - GetChecklistFormulaDetails");
+          } else if (hasInternalTable) {
+              postman.setNextRequest("06 - GetAllInternalTablesByMasterID");
+          } else {
+              postman.setNextRequest("07 - GetExecutionDetailsByScheduleID");
+          }
       }
 
 

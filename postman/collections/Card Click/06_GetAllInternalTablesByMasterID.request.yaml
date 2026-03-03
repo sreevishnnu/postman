@@ -11,18 +11,12 @@ scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var parentIds = JSON.parse(pm.environment.get("checklist_parentIds") || "[]");
-      if (parentIds.length === 0) {
-          console.log("[GetAllInternalTablesByMasterID] SKIPPED - no internal table IDs found.");
-          pm.environment.set("t_GetAllInternalTables_ms", "SKIPPED");
-          pm.execution.skip();
-      } else {
-          pm.environment.set("t_GetAllInternalTables_start", Date.now());
-          console.log("[GetAllInternalTablesByMasterID] Request started at: " + new Date().toISOString());
-      }
+      pm.environment.set("t_GetAllInternalTables_start", Date.now());
+      console.log("[GetAllInternalTablesByMasterID] Request started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
+      postman.setNextRequest("07 - GetExecutionDetailsByScheduleID");
       var overallStart = parseInt(pm.environment.get("t_GetAllInternalTables_start"));
 
       // Fire additional parentId calls in parallel using pm.sendRequest

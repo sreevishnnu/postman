@@ -11,15 +11,8 @@ scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var hasFormula = pm.environment.get("checklist_hasFormula");
-      if (hasFormula !== "true") {
-          console.log("[GetChecklistFormulaDetails] SKIPPED - no formula fields in checklist.");
-          pm.environment.set("t_GetChecklistFormulaDetails_ms", "SKIPPED");
-          pm.execution.skip();
-      } else {
-          pm.environment.set("t_GetChecklistFormulaDetails_start", Date.now());
-          console.log("[GetChecklistFormulaDetails] Request started at: " + new Date().toISOString());
-      }
+      pm.environment.set("t_GetChecklistFormulaDetails_start", Date.now());
+      console.log("[GetChecklistFormulaDetails] Request started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
@@ -28,6 +21,14 @@ scripts:
 
       pm.environment.set("t_GetChecklistFormulaDetails_ms", elapsed);
       console.log("[GetChecklistFormulaDetails] Completed in " + (elapsed / 1000).toFixed(2) + " s");
+
+      // Chaining for Runner
+      var hasInternalTable = pm.environment.get("checklist_hasInternalTable") === "true";
+      if (hasInternalTable) {
+          postman.setNextRequest("06 - GetAllInternalTablesByMasterID");
+      } else {
+          postman.setNextRequest("07 - GetExecutionDetailsByScheduleID");
+      }
 
       pm.test("GetChecklistFormulaDetails - Status 200", function () {
           pm.response.to.have.status(200);

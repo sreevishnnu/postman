@@ -11,22 +11,12 @@ scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
-      if (imageIds.length === 0) {
-          console.log("[GetImageData] SKIPPED - no image IDs found.");
-          pm.environment.set("t_GetImageData_ms", "SKIPPED");
-          pm.execution.skip();
-      } else {
-          pm.environment.set("t_GetImageData_start", Date.now());
-          console.log("[GetImageData] Request started at: " + new Date().toISOString());
-      }
+      pm.environment.set("t_GetImageData_start", Date.now());
+      console.log("[GetImageData] Request started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
-      if (pm.environment.get("skip_images") === "true") {
-          return;
-      }
-
+      postman.setNextRequest("11 - UpdateofflineInspectionStatus");
       var overallStart = parseInt(pm.environment.get("t_GetImageData_start"));
 
       // Fire additional image calls in parallel using pm.sendRequest

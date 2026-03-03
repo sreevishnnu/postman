@@ -21,19 +21,26 @@ scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var payloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");
-      if (payloads.length === 0) {
-          console.log("[GetTaskInfoByID] SKIPPED - no tasks found in previous step.");
-          pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
-          pm.execution.skip();
-      } else {
-          pm.environment.set("t_GetTaskInfo_start", Date.now());
-          console.log("[GetTaskInfoByID] Request started for " + payloads.length + " tasks at: " + new Date().toISOString());
-      }
+      pm.environment.set("t_GetTaskInfo_start", Date.now());
+      console.log("[GetTaskInfoByID] Request started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
       var overallStart = parseInt(pm.environment.get("t_GetTaskInfo_start"));
+
+      // Chaining for Runner
+      var rawImgs = pm.environment.get("checklist_imageIds");
+      var hasImages = false;
+      try {
+          var imgIds = JSON.parse(rawImgs || "[]");
+          hasImages = (imgIds.length > 0);
+      } catch(e) { hasImages = false; }
+
+      if (hasImages) {
+          postman.setNextRequest("10 - GetImageData");
+      } else {
+          postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+      }
 
       // Fire additional task info calls in parallel
       var payloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");

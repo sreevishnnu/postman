@@ -68,6 +68,15 @@ scripts:
           pm.environment.set("t_GetImageData_ms", "SKIPPED");
       }
 
+      // Chaining for Runner
+      if (exeDetailIds.length > 0) {
+          postman.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
+      } else if (imageIds.length > 0) {
+          postman.setNextRequest("10 - GetImageData");
+      } else {
+          postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+      }
+
       var elapsed = Date.now() - overallStart;
       pm.environment.set("t_GetExecutionDetails_ms", elapsed);
       console.log("[GetExecutionDetailsByScheduleID] Completed in " + (elapsed / 1000).toFixed(2) + " s");

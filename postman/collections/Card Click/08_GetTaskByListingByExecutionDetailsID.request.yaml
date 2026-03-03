@@ -20,15 +20,8 @@ scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var exeIds = JSON.parse(pm.environment.get("checklist_executionDetailIds") || "[]");
-      if (exeIds.length === 0) {
-          console.log("[GetTaskByListing] SKIPPED - no execution details found.");
-          pm.environment.set("t_GetTaskByListing_ms", "SKIPPED");
-          pm.execution.skip();
-      } else {
-          pm.environment.set("t_GetTaskByListing_start", Date.now());
-          console.log("[GetTaskByListing] Request started at: " + new Date().toISOString());
-      }
+      pm.environment.set("t_GetTaskByListing_start", Date.now());
+      console.log("[GetTaskByListing] Request started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
@@ -56,7 +49,12 @@ scripts:
       processTaskResponse(pm.response.json(), pm.environment.get("task_exeId"));
 
       // Fire additional task calls in parallel using pm.sendRequest
-      var exeIds = JSON.parse(pm.environment.get("checklist_executionDetailIds") || "[]");
+      var rawExeIds = pm.environment.get("checklist_executionDetailIds");
+      var exeIds = [];
+      try {
+          exeIds = JSON.parse(rawExeIds || "[]");
+      } catch(e) { exeIds = []; }
+      
       var baseUrl  = pm.environment.get("base_url");
       var token    = pm.environment.get("token");
       
@@ -66,48 +64,43 @@ scripts:
       var bizVerticalId = pm.environment.get("businessVerticalId");
       var verticalId = pm.environment.get("verticalId");
 
-      // First exeId was sent as the main request
-      var firstId = exeIds[0];
-      console.log("[GetTaskByListing] ID=" + firstId + " => main request completed");
-
       var remaining = exeIds.slice(1);
       var pending   = remaining.length;
 
       if (pending === 0) {
           finalize();
-          return;
-      }
+      } else {
+          for (var i = 0; i < remaining.length; i++) {
+              (function(eid) {
+                  var reqUrl = baseUrl + "/ProInspectorJson.svc/GetTaskByListingByExecutionDetailsID"
+                      + "?clientId=" + clientId
+                      + "&userId=" + userId
+                      + "&businessVerticalsId=" + bizVerticalId
+                      + "&executionDetailsId=" + eid
+                      + "&verticalId=" + verticalId
+                      + "&pageSize=100&pageIndex=0&recordCount=0";
 
-      for (var i = 0; i < remaining.length; i++) {
-          (function(eid) {
-              var reqUrl = baseUrl + "/ProInspectorJson.svc/GetTaskByListingByExecutionDetailsID"
-                  + "?clientId=" + clientId
-                  + "&userId=" + userId
-                  + "&businessVerticalsId=" + bizVerticalId
-                  + "&executionDetailsId=" + eid
-                  + "&verticalId=" + verticalId
-                  + "&pageSize=100&pageIndex=0&recordCount=0";
-
-              var reqStart = Date.now();
-              pm.sendRequest({
-                  url: reqUrl,
-                  method: "GET",
-                  header: { "Authorization": token }
-              }, function(err, res) {
-                  var reqElapsed = Date.now() - reqStart;
-                  var wallElapsed = Date.now() - overallStart;
-                  if (err) {
-                      console.error("[GetTaskByListing] ID=" + eid + " ERROR: " + err);
-                  } else {
-                      console.log("[GetTaskByListing] ID=" + eid + " => " + res.code + " | " + (reqElapsed / 1000).toFixed(2) + " s (wall: " + (wallElapsed / 1000).toFixed(2) + " s)");
-                      processTaskResponse(res.json(), eid);
-                  }
-                  pending--;
-                  if (pending === 0) {
-                      finalize();
-                  }
-              });
-          })(remaining[i]);
+                  var reqStart = Date.now();
+                  pm.sendRequest({
+                      url: reqUrl,
+                      method: "GET",
+                      header: { "Authorization": token }
+                  }, function(err, res) {
+                      var reqElapsed = Date.now() - reqStart;
+                      var wallElapsed = Date.now() - overallStart;
+                      if (err) {
+                          console.error("[GetTaskByListing] ID=" + eid + " ERROR: " + err);
+                      } else {
+                          console.log("[GetTaskByListing] ID=" + eid + " => " + res.code + " | " + (reqElapsed / 1000).toFixed(2) + " s (wall: " + (wallElapsed / 1000).toFixed(2) + " s)");
+                          processTaskResponse(res.json(), eid);
+                      }
+                      pending--;
+                      if (pending === 0) {
+                          finalize();
+                      }
+                  });
+              })(remaining[i]);
+          }
       }
 
       function finalize() {
@@ -123,6 +116,24 @@ scripts:
               pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
           }
           console.log("[GetTaskByListing] All task calls completed in " + (totalElapsed / 1000).toFixed(2) + " s. Total tasks found: " + taskPayloads.length);
+
+          // Chaining for Runner
+          if (taskPayloads.length > 0) {
+              postman.setNextRequest("09 - GetTaskInfoByID");
+          } else {
+              var rawImgs = pm.environment.get("checklist_imageIds");
+              var hasImages = false;
+              try {
+                  var imgIds = JSON.parse(rawImgs || "[]");
+                  hasImages = (imgIds.length > 0);
+              } catch(e) { hasImages = false; }
+              
+              if (hasImages) {
+                  postman.setNextRequest("10 - GetImageData");
+              } else {
+                  postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+              }
+          }
       }
 
       pm.test("GetTaskByListing - Status 200", function () {
