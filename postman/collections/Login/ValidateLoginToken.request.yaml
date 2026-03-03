@@ -1,0 +1,27 @@
+$kind: http-request
+name: ValidateLoginToken
+url: "{{base_url}}/ProInspectorJsonV1.svc/ValidateLoginToken"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"username\": \"ShlokGasAdmin\",\r
+
+    \    \"password\": \"0nYoiMgrDwe/n+FfOBgSVA==\\n\",\r
+
+    \    \"deviceTypeId\": 2,\r
+
+    \    \"licenseKey\": \"ea273db6-f1ee-49d8-b178-c76eee048de5\"\r
+
+    }"
+settings:
+  disabledSystemHeaders: []
+order: 1772518434432
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var jsonData = pm.response.json();
+      var userToken = jsonData.ValidateLoginTokenResult.UserToken;
+      pm.environment.set("token", userToken);
