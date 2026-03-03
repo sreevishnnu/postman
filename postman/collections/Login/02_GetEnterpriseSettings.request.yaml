@@ -1,0 +1,28 @@
+$kind: http-request
+name: "02 - GetEnterpriseSettings"
+url: "{{base_url}}/ProInspectorJson.svc/GetEnterpriseSettings"
+method: GET
+headers:
+  Authorization: "{{token}}"
+queryParams:
+  clientId: "{{clientId}}"
+  languageId: "{{languageId}}"
+  verticalId: "{{verticalId}}"
+  userId: "{{userId}}"
+  ComponentId: "1"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000002
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var jsonData = pm.response.json();
+      var result = jsonData.GetEnterpriseSettingsResult;
+
+      pm.environment.set("businessVerticalId", result.BusinessVerticalsId);
+      console.log("[GetEnterpriseSettings] businessVerticalId set to: " + result.BusinessVerticalsId);
+
+      pm.test("Status is 200", function () {
+          pm.response.to.have.status(200);
+      });
