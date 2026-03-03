@@ -37,10 +37,10 @@ scripts:
           { label: "05 GetChecklistFormulaDetails",     env: "t_GetChecklistFormulaDetails_ms" },
           { label: "06 GetAllInternalTablesByMasterID", env: "t_GetAllInternalTables_ms" },
           { label: "07 GetExecutionDetailsByScheduleID",env: "t_GetExecutionDetails_ms" },
-          { label: "08 GetTaskByListing",               env: "t_GetTaskByListing_ms" },
-          { label: "09 GetTaskInfoByID",                env: "t_GetTaskInfo_ms" },
-          { label: "10 GetImageData (images)",           env: "t_GetImageData_ms" },
-          { label: "11 UpdateofflineInspectionStatus",  env: "t_UpdateofflineStatus_ms" }
+      { label: "08 GetTaskListByScheduleId",        env: "t_GetTaskListByScheduleId_ms" },
+      { label: "09 GetAllSubTasksListPagingFO",     env: "t_GetAllSubTasks_ms" },
+      { label: "10 GetImageData (images)",           env: "t_GetImageData_ms" },
+      { label: "11 UpdateofflineInspectionStatus",  env: "t_UpdateofflineStatus_ms" }
       ];
       var lines = ["=== CARD CLICK - TIMING SUMMARY ==="];
       var total = 0;
@@ -61,3 +61,6 @@ scripts:
       lines.push("  Total: " + (total / 1000).toFixed(2) + " s");
       lines.push("====================================");
       console.log(lines.join("\n"));
+      
+      // Force end collection run
+      pm.execution.setNextRequest(null);
