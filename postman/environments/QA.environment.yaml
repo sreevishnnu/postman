@@ -138,4 +138,19 @@ values:
   - key: task_exeId
     value: '0'
     enabled: true
+  - key: attFamily
+    value: '0'
+    enabled: true
+  - key: task_info_taskId
+    value: '0'
+    enabled: true
+  - key: task_info_exeId
+    value: '0'
+    enabled: true
+  - key: checklist_taskInfoPayloads
+    value: '[]'
+    enabled: true
+  - key: t_GetTaskInfo_ms
+    value: ' '
+    enabled: true
 color: 0

@@ -1,19 +1,19 @@
 $kind: http-request
-name: "09 - GetImageData"
+name: "10 - GetImageData"
 url: "{{base_url}}/ProInspectorJson.svc/GetImageData?m_intChecklistExeDetailsId={{image_exeId}}"
 method: GET
 headers:
   Authorization: "{{token}}"
 settings:
   disabledSystemHeaders: []
-order: 1772600000009
+order: 1772600000010
 scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var hasImages = pm.environment.get("checklist_hasImages");
-      if (hasImages !== "true") {
-          console.log("[GetImageData] SKIPPED - no items with images.");
+      var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+      if (imageIds.length === 0) {
+          console.log("[GetImageData] SKIPPED - no image IDs found.");
           pm.environment.set("t_GetImageData_ms", "SKIPPED");
           pm.execution.skip();
       } else {

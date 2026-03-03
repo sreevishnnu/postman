@@ -1,12 +1,12 @@
 $kind: http-request
-name: "10 - UpdateofflineInspectionStatus"
+name: "11 - UpdateofflineInspectionStatus"
 url: "{{base_url}}/ProInspectorJson.svc/UpdateofflineInspectionStatus?userId={{userId}}&scheduleId={{scheduleID}}&isDownloaded=1"
 method: GET
 headers:
   Authorization: "{{token}}"
 settings:
   disabledSystemHeaders: []
-order: 1772600000010
+order: 1772600000011
 scripts:
   - type: beforeRequest
     language: text/javascript
@@ -38,8 +38,9 @@ scripts:
           { label: "06 GetAllInternalTablesByMasterID", env: "t_GetAllInternalTables_ms" },
           { label: "07 GetExecutionDetailsByScheduleID",env: "t_GetExecutionDetails_ms" },
           { label: "08 GetTaskByListing",               env: "t_GetTaskByListing_ms" },
-          { label: "09 GetImageData (images)",           env: "t_GetImageData_ms" },
-          { label: "10 UpdateofflineInspectionStatus",  env: "t_UpdateofflineStatus_ms" }
+          { label: "09 GetTaskInfoByID",                env: "t_GetTaskInfo_ms" },
+          { label: "10 GetImageData (images)",           env: "t_GetImageData_ms" },
+          { label: "11 UpdateofflineInspectionStatus",  env: "t_UpdateofflineStatus_ms" }
       ];
       var lines = ["=== CARD CLICK - TIMING SUMMARY ==="];
       var total = 0;

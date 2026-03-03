@@ -33,6 +33,27 @@ scripts:
     language: text/javascript
     code: |-
       var overallStart = parseInt(pm.environment.get("t_GetTaskByListing_start"));
+      var taskPayloads = [];
+
+      function processTaskResponse(responseData, exeId) {
+          try {
+              var resultStr = responseData.GetTaskByListingByExecutionDetailsIDResult;
+              if (resultStr) {
+                  var tasks = JSON.parse(resultStr);
+                  for (var j = 0; j < tasks.length; j++) {
+                      taskPayloads.push({
+                          taskId: tasks[j].hdn_TaskId,
+                          exeId: exeId
+                      });
+                  }
+              }
+          } catch(e) {
+              console.error("[GetTaskByListing] Error parsing tasks for exeId=" + exeId + ": " + e);
+          }
+      }
+
+      // Process main request response
+      processTaskResponse(pm.response.json(), pm.environment.get("task_exeId"));
 
       // Fire additional task calls in parallel using pm.sendRequest
       var exeIds = JSON.parse(pm.environment.get("checklist_executionDetailIds") || "[]");
@@ -53,9 +74,7 @@ scripts:
       var pending   = remaining.length;
 
       if (pending === 0) {
-          var elapsed = Date.now() - overallStart;
-          pm.environment.set("t_GetTaskByListing_ms", elapsed);
-          console.log("[GetTaskByListing] All task calls completed in " + (elapsed / 1000).toFixed(2) + " s");
+          finalize();
           return;
       }
 
@@ -81,15 +100,29 @@ scripts:
                       console.error("[GetTaskByListing] ID=" + eid + " ERROR: " + err);
                   } else {
                       console.log("[GetTaskByListing] ID=" + eid + " => " + res.code + " | " + (reqElapsed / 1000).toFixed(2) + " s (wall: " + (wallElapsed / 1000).toFixed(2) + " s)");
+                      processTaskResponse(res.json(), eid);
                   }
                   pending--;
                   if (pending === 0) {
-                      var totalElapsed = Date.now() - overallStart;
-                      pm.environment.set("t_GetTaskByListing_ms", totalElapsed);
-                      console.log("[GetTaskByListing] All task calls completed in " + (totalElapsed / 1000).toFixed(2) + " s");
+                      finalize();
                   }
               });
           })(remaining[i]);
+      }
+
+      function finalize() {
+          var totalElapsed = Date.now() - overallStart;
+          pm.environment.set("t_GetTaskByListing_ms", totalElapsed);
+          pm.environment.set("checklist_taskInfoPayloads", JSON.stringify(taskPayloads));
+          if (taskPayloads.length > 0) {
+              pm.environment.set("task_info_taskId", String(taskPayloads[0].taskId));
+              pm.environment.set("task_info_exeId",  String(taskPayloads[0].exeId));
+          } else {
+              pm.environment.set("task_info_taskId", "0");
+              pm.environment.set("task_info_exeId",  "0");
+              pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
+          }
+          console.log("[GetTaskByListing] All task calls completed in " + (totalElapsed / 1000).toFixed(2) + " s. Total tasks found: " + taskPayloads.length);
       }
 
       pm.test("GetTaskByListing - Status 200", function () {

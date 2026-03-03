@@ -11,9 +11,9 @@ scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
-      var hasInternalTable = pm.environment.get("checklist_hasInternalTable");
-      if (hasInternalTable !== "true") {
-          console.log("[GetAllInternalTablesByMasterID] SKIPPED - no internal table lookups.");
+      var parentIds = JSON.parse(pm.environment.get("checklist_parentIds") || "[]");
+      if (parentIds.length === 0) {
+          console.log("[GetAllInternalTablesByMasterID] SKIPPED - no internal table IDs found.");
           pm.environment.set("t_GetAllInternalTables_ms", "SKIPPED");
           pm.execution.skip();
       } else {

@@ -47,6 +47,9 @@ scripts:
       pm.environment.set("checklist_executionDetailIds", JSON.stringify(exeDetailIds));
       if (exeDetailIds.length > 0) {
           pm.environment.set("task_exeId", String(exeDetailIds[0]));
+      } else {
+          pm.environment.set("task_exeId", "0");
+          pm.environment.set("t_GetTaskByListing_ms", "SKIPPED");
       }
 
       var baseUrl = pm.environment.get("base_url");
@@ -61,6 +64,7 @@ scripts:
           console.log("[GetExecutionDetails] Found " + pending + " items with images. Saved for next request.");
       } else {
           console.log("[GetExecutionDetailsByScheduleID] No images to fetch.");
+          pm.environment.set("image_exeId", "0");
           pm.environment.set("t_GetImageData_ms", "SKIPPED");
       }
 
