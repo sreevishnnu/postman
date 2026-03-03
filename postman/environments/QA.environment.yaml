@@ -6,4 +6,28 @@ values:
   - key: token
     value: 584f58b8-ac8e-4136-9dfe-3f44996708d3
     enabled: true
+  - key: timing_results
+    value: ''
+    enabled: true
+  - key: t_GetInspections_start
+    value: ''
+    enabled: true
+  - key: t_GetInspections_ms
+    value: ''
+    enabled: true
+  - key: inspectionID
+    value: ''
+    enabled: true
+  - key: masterID
+    value: ''
+    enabled: true
+  - key: tableCode
+    value: ''
+    enabled: true
+  - key: t_GetDashboardDetails_start
+    value: ''
+    enabled: true
+  - key: t_GetDashboardDetails_ms
+    value: ''
+    enabled: true
 color: 0

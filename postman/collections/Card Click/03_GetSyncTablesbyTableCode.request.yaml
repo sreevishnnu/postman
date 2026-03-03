@@ -1,19 +1,22 @@
 $kind: http-request
 name: "03 - GetSyncTablesbyTableCode"
-url: "{{base_url}}/ProInspectorJsonV1.svc/GetSyncTablesbyTableCode"
+url: "{{base_url}}/ProInspectorJson.svc/GetSyncTablesbyTableCode"
 method: GET
 params:
-  - name: token
-    value: "{{token}}"
+  - name: clientId
+    value: "4"
+  - name: languageId
+    value: "1"
+  - name: verticalId
+    value: "1"
+  - name: userId
+    value: "411"
   - name: tableCode
-    value: "{{tableCode}}"
-  - name: deviceTypeId
-    value: "2"
-  - name: licenseKey
-    value: "{{licenseKey}}"
+    value: "CC_CONFIG"
+  - name: referenceId
+    value: "{{checklistId}}"
 headers:
-  - name: Authorization
-    value: "{{token}}"
+  Authorization: "{{token}}"
 settings:
   disabledSystemHeaders: []
 order: 1772600000003
@@ -23,7 +26,7 @@ scripts:
     code: |-
       pm.environment.set("t_GetSyncTables_start", Date.now());
       console.log("[GetSyncTablesbyTableCode] Request started at: " + new Date().toISOString());
-      console.log("[GetSyncTablesbyTableCode] Using TableCode: " + pm.environment.get("tableCode"));
+      console.log("[GetSyncTablesbyTableCode] checklistId: " + pm.environment.get("checklistId"));
   - type: afterResponse
     language: text/javascript
     code: |-
@@ -33,7 +36,6 @@ scripts:
       pm.environment.set("t_GetSyncTables_ms", elapsed);
       console.log("[GetSyncTablesbyTableCode] Completed in " + elapsed + " ms");
 
-      // Test assertions
       pm.test("GetSyncTablesbyTableCode - Status 200", function () {
           pm.response.to.have.status(200);
       });

@@ -32,8 +32,7 @@ body:
         }
     }
 headers:
-  - name: Authorization
-    value: "{{token}}"
+  Authorization: "{{token}}"
 settings:
   disabledSystemHeaders: []
 order: 1772600000002

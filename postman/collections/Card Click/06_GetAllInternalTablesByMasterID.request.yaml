@@ -1,0 +1,126 @@
+$kind: http-request
+name: "06 - GetAllInternalTablesByMasterID"
+url: "{{base_url}}/ProInspectorJson.svc/GetAllInternalTablesByMasterID"
+method: GET
+params:
+  - name: clientId
+    value: "4"
+  - name: languageId
+    value: "1"
+  - name: verticalId
+    value: "1"
+  - name: filterCondition
+    value: ""
+  - name: pageSize
+    value: "0"
+  - name: pageIndex
+    value: "0"
+  - name: parentId
+    value: "{{internalTable_parentId}}"
+  - name: recordCount
+    value: "0"
+headers:
+  Authorization: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000006
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      var hasInternalTable = pm.environment.get("checklist_hasInternalTable");
+      if (hasInternalTable !== "true") {
+          console.log("[GetAllInternalTablesByMasterID] SKIPPED - no internal table lookups.");
+          pm.environment.set("t_GetAllInternalTables_ms", "SKIPPED");
+          pm.environment.set("skip_internalTable", "true");
+      } else {
+          pm.environment.set("skip_internalTable", "false");
+          pm.environment.set("t_GetAllInternalTables_start", Date.now());
+          console.log("[GetAllInternalTablesByMasterID] Request started at: " + new Date().toISOString());
+      }
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      if (pm.environment.get("skip_internalTable") === "true") {
+          printTimingSummary();
+          return;
+      }
+
+      var overallStart = parseInt(pm.environment.get("t_GetAllInternalTables_start"));
+
+      // Fire additional parentId calls in parallel using pm.sendRequest
+      var parentIds = JSON.parse(pm.environment.get("checklist_parentIds") || "[]");
+      var baseUrl = pm.environment.get("base_url");
+      var token   = pm.environment.get("token");
+
+      // First parentId was sent as the main request — skip it, fire the rest
+      var remaining = parentIds.slice(1);
+      var pending   = remaining.length;
+
+      if (pending === 0) {
+          var elapsed = Date.now() - overallStart;
+          pm.environment.set("t_GetAllInternalTables_ms", elapsed);
+          console.log("[GetAllInternalTablesByMasterID] All parentId calls done. Total: " + elapsed + " ms");
+          printTimingSummary();
+          return;
+      }
+
+      for (var i = 0; i < remaining.length; i++) {
+          (function(pid) {
+              var reqUrl = baseUrl + "/ProInspectorJson.svc/GetAllInternalTablesByMasterID"
+                  + "?clientId=4&languageId=1&verticalId=1"
+                  + "&filterCondition=&pageSize=0&pageIndex=0"
+                  + "&parentId=" + pid + "&recordCount=0";
+
+              pm.sendRequest({
+                  url: reqUrl,
+                  method: "GET",
+                  header: { "Authorization": token }
+              }, function(err, res) {
+                  var elapsed = Date.now() - overallStart;
+                  if (err) {
+                      console.error("[GetAllInternalTablesByMasterID] parentId=" + pid + " ERROR: " + err);
+                  } else {
+                      console.log("[GetAllInternalTablesByMasterID] parentId=" + pid + " => " + res.code + " (" + elapsed + " ms so far)");
+                  }
+                  pending--;
+                  if (pending === 0) {
+                      var totalElapsed = Date.now() - overallStart;
+                      pm.environment.set("t_GetAllInternalTables_ms", totalElapsed);
+                      console.log("[GetAllInternalTablesByMasterID] All parentId calls completed. Total wall time: " + totalElapsed + " ms");
+                      printTimingSummary();
+                  }
+              });
+          })(remaining[i]);
+      }
+
+      pm.test("GetAllInternalTablesByMasterID - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      function printTimingSummary() {
+          var keys = [
+              { label: "03 GetSyncTablesbyTableCode",    env: "t_GetSyncTables_ms" },
+              { label: "04 GetChecklistConfiguration",   env: "t_GetChecklistConfiguration_ms" },
+              { label: "05 GetChecklistFormulaDetails",  env: "t_GetChecklistFormulaDetails_ms" },
+              { label: "06 GetAllInternalTablesByMasterID", env: "t_GetAllInternalTables_ms" }
+          ];
+          var lines = ["=== LISTING CLICK - TIMING SUMMARY ==="];
+          var total = 0;
+          for (var i = 0; i < keys.length; i++) {
+              var val = pm.environment.get(keys[i].env);
+              if (val === "SKIPPED") {
+                  lines.push("  " + keys[i].label + ": SKIPPED");
+              } else if (val) {
+                  var ms = parseInt(val);
+                  total += ms;
+                  lines.push("  " + keys[i].label + ": " + ms + " ms");
+              } else {
+                  lines.push("  " + keys[i].label + ": (not recorded)");
+              }
+          }
+          lines.push("--------------------------------------");
+          lines.push("  Total: " + total + " ms");
+          lines.push("======================================");
+          console.log(lines.join("\n"));
+      }

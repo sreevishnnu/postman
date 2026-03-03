@@ -1,19 +1,18 @@
 $kind: http-request
-name: "05 - GetChecklistFormulaDetails (Conditional)"
-url: "{{base_url}}/ProInspectorJsonV1.svc/GetChecklistFormulaDetails"
+name: "05 - GetChecklistFormulaDetails"
+url: "{{base_url}}/ProInspectorJson.svc/GetChecklistFormulaDetails"
 method: GET
 params:
-  - name: token
-    value: "{{token}}"
-  - name: inspectionID
-    value: "{{inspectionID}}"
-  - name: deviceTypeId
-    value: "2"
-  - name: licenseKey
-    value: "{{licenseKey}}"
+  - name: checklistId
+    value: "{{checklistId}}"
+  - name: pageSize
+    value: "50"
+  - name: startIndex
+    value: "0"
+  - name: recordCount
+    value: "0"
 headers:
-  - name: Authorization
-    value: "{{token}}"
+  Authorization: "{{token}}"
 settings:
   disabledSystemHeaders: []
 order: 1772600000005
@@ -22,12 +21,9 @@ scripts:
     language: text/javascript
     code: |-
       var hasFormula = pm.environment.get("checklist_hasFormula");
-
       if (hasFormula !== "true") {
-          // Skip this request — checklist has no formula
-          console.log("[GetChecklistFormulaDetails] SKIPPED - Checklist has no formula fields.");
+          console.log("[GetChecklistFormulaDetails] SKIPPED - no formula fields in checklist.");
           pm.environment.set("t_GetChecklistFormulaDetails_ms", "SKIPPED");
-          // Signal skip via a custom variable checked in summary
           pm.environment.set("skip_formula", "true");
       } else {
           pm.environment.set("skip_formula", "false");
@@ -38,8 +34,6 @@ scripts:
     language: text/javascript
     code: |-
       if (pm.environment.get("skip_formula") === "true") {
-          console.log("[GetChecklistFormulaDetails] Response received but request was marked as skipped.");
-          // If also no internal table, this is the terminal step — print summary
           if (pm.environment.get("checklist_hasInternalTable") !== "true") {
               printTimingSummary();
           }
@@ -52,7 +46,6 @@ scripts:
       pm.environment.set("t_GetChecklistFormulaDetails_ms", elapsed);
       console.log("[GetChecklistFormulaDetails] Completed in " + elapsed + " ms");
 
-      // Test assertions
       pm.test("GetChecklistFormulaDetails - Status 200", function () {
           pm.response.to.have.status(200);
       });
@@ -60,43 +53,33 @@ scripts:
           pm.expect(elapsed).to.be.below(5000);
       });
 
-      // If no internal table, 05 is the last active request — print summary
       if (pm.environment.get("checklist_hasInternalTable") !== "true") {
           printTimingSummary();
       }
 
       function printTimingSummary() {
-          var summary = [];
-          summary.push("=== INSPECTION LISTING - TIMING SUMMARY ===");
-
           var keys = [
-              { label: "01 GetInspections",             env: "t_GetInspections_ms" },
-              { label: "02 GetDashboardDetails",         env: "t_GetDashboardDetails_ms" },
               { label: "03 GetSyncTablesbyTableCode",    env: "t_GetSyncTables_ms" },
-              { label: "04 GetChecklistConfiguration",  env: "t_GetChecklistConfiguration_ms" },
+              { label: "04 GetChecklistConfiguration",   env: "t_GetChecklistConfiguration_ms" },
               { label: "05 GetChecklistFormulaDetails",  env: "t_GetChecklistFormulaDetails_ms" },
               { label: "06 GetAllInternalTablesByMasterID", env: "t_GetAllInternalTables_ms" }
           ];
-
-          var grandTotal = 0;
-
+          var lines = ["=== LISTING CLICK - TIMING SUMMARY ==="];
+          var total = 0;
           for (var i = 0; i < keys.length; i++) {
               var val = pm.environment.get(keys[i].env);
               if (val === "SKIPPED") {
-                  summary.push("  " + keys[i].label + ": SKIPPED");
+                  lines.push("  " + keys[i].label + ": SKIPPED");
               } else if (val) {
                   var ms = parseInt(val);
-                  grandTotal += ms;
-                  summary.push("  " + keys[i].label + ": " + ms + " ms");
+                  total += ms;
+                  lines.push("  " + keys[i].label + ": " + ms + " ms");
               } else {
-                  summary.push("  " + keys[i].label + ": (not recorded)");
+                  lines.push("  " + keys[i].label + ": (not recorded)");
               }
           }
-
-          summary.push("-------------------------------------------");
-          summary.push("  Sequential Total (excl. parallel):  " + grandTotal + " ms");
-          summary.push("  Note: Steps 01 & 02 run in parallel; total wall time is max(01, 02) + 03 + 04 + conditionals");
-          summary.push("===========================================");
-
-          console.log(summary.join("\n"));
+          lines.push("--------------------------------------");
+          lines.push("  Total: " + total + " ms");
+          lines.push("======================================");
+          console.log(lines.join("\n"));
       }

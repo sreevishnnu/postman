@@ -1,0 +1,89 @@
+$kind: http-request
+name: "04 - GetChecklistConfiguration"
+url: "{{base_url}}/ProInspectorJson.svc/GetChecklistConfiguration"
+method: GET
+params:
+  - name: checklistId
+    value: "{{checklistId}}"
+  - name: pageSize
+    value: "{{cl_pageSize}}"
+  - name: startIndex
+    value: "{{cl_startIndex}}"
+  - name: recordCount
+    value: "{{cl_recordCount}}"
+headers:
+  Authorization: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000004
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      // Init pagination defaults if not already set
+      if (!pm.environment.get("cl_pageSize"))    pm.environment.set("cl_pageSize",    "50");
+      if (!pm.environment.get("cl_startIndex"))  pm.environment.set("cl_startIndex",  "0");
+      if (!pm.environment.get("cl_recordCount")) pm.environment.set("cl_recordCount", "0");
+
+      pm.environment.set("t_GetChecklistConfiguration_start", Date.now());
+      console.log("[GetChecklistConfiguration] Page start=" + pm.environment.get("cl_startIndex") + " size=" + pm.environment.get("cl_pageSize") + " checklistId=" + pm.environment.get("checklistId"));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var startTime = pm.environment.get("t_GetChecklistConfiguration_start");
+      var elapsed = Date.now() - parseInt(startTime);
+
+      pm.environment.set("t_GetChecklistConfiguration_ms", elapsed);
+      console.log("[GetChecklistConfiguration] Completed in " + elapsed + " ms");
+
+      var jsonData = pm.response.json();
+      var result = jsonData.GetChecklistConfigurationResult;
+
+      var hasFormula = false;
+      var hasInternalTable = false;
+      var parentIds = [];
+
+      if (result && result.length > 0) {
+          for (var i = 0; i < result.length; i++) {
+              var item = result[i];
+
+              if (item.HasFormula === true || item.HasFormula === 1 || item.FormulaID) {
+                  hasFormula = true;
+              }
+
+              // Collect unique parentIds for internal table calls
+              if (item.HasInternalTable === true || item.HasInternalTable === 1 || item.ParentId) {
+                  hasInternalTable = true;
+                  var pid = item.ParentId || item.InternalTableParentId;
+                  if (pid && parentIds.indexOf(pid) === -1) {
+                      parentIds.push(pid);
+                  }
+              }
+          }
+
+          // Pagination: if page is not full, no more pages
+          var pageSize = parseInt(pm.environment.get("cl_pageSize"));
+          if (result.length >= pageSize) {
+              var nextStart = parseInt(pm.environment.get("cl_startIndex")) + result.length;
+              pm.environment.set("cl_startIndex", String(nextStart));
+              console.log("[GetChecklistConfiguration] More pages — next startIndex: " + nextStart);
+          } else {
+              console.log("[GetChecklistConfiguration] Last page. Total items in this page: " + result.length);
+          }
+      }
+
+      pm.environment.set("checklist_hasFormula", hasFormula ? "true" : "false");
+      pm.environment.set("checklist_hasInternalTable", hasInternalTable ? "true" : "false");
+      pm.environment.set("checklist_parentIds", JSON.stringify(parentIds));
+      if (parentIds.length > 0) {
+          pm.environment.set("internalTable_parentId", String(parentIds[0]));
+      }
+
+      console.log("[GetChecklistConfiguration] HasFormula=" + hasFormula + " HasInternalTable=" + hasInternalTable + " ParentIds=" + JSON.stringify(parentIds));
+
+      pm.test("GetChecklistConfiguration - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("GetChecklistConfiguration - Response time < 5000ms", function () {
+          pm.expect(elapsed).to.be.below(5000);
+      });

@@ -1,7 +1,9 @@
 $kind: http-request
-name: "01 - GetInspections"
+name: 01 - GetInspections
 url: "{{base_url}}/ProInspectorJsonV1.svc/GetInspections"
 method: POST
+headers:
+  Authorization: "{{token}}"
 body:
   type: json
   content: |-
@@ -31,34 +33,42 @@ body:
             "productID": 5
         }
     }
-headers:
-  - name: Authorization
-    value: "{{token}}"
 settings:
   disabledSystemHeaders: []
 order: 1772600000001
 scripts:
   - type: beforeRequest
-    language: text/javascript
-    code: |-
+    code: >-
       // Reset timing results
+
       pm.environment.set("timing_results", JSON.stringify([]));
 
+
       // Record start time for GetInspections
+
       pm.environment.set("t_GetInspections_start", Date.now());
-      console.log("[GetInspections] Request started at: " + new Date().toISOString());
-  - type: afterResponse
+
+      console.log("[GetInspections] Request started at: " + new
+      Date().toISOString());
     language: text/javascript
-    code: |-
+  - type: afterResponse
+    code: >-
       var startTime = pm.environment.get("t_GetInspections_start");
+
       var elapsed = Date.now() - parseInt(startTime);
 
+
       pm.environment.set("t_GetInspections_ms", elapsed);
+
       console.log("[GetInspections] Completed in " + elapsed + " ms");
 
+
       // Store inspection data for downstream requests
+
       var jsonData = pm.response.json();
+
       var result = jsonData.GetInspectionsResult;
+
 
       if (result && result.length > 0) {
           // Store first inspection for chained calls
@@ -72,10 +82,14 @@ scripts:
           console.warn("[GetInspections] No inspection records returned.");
       }
 
+
       // Test assertion
+
       pm.test("GetInspections - Status 200", function () {
           pm.response.to.have.status(200);
       });
+
       pm.test("GetInspections - Response time < 5000ms", function () {
           pm.expect(elapsed).to.be.below(5000);
       });
+    language: text/javascript
