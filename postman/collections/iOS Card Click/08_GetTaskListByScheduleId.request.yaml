@@ -70,7 +70,8 @@ scripts:
 
       if (taskIds.length > 0) {
           pm.environment.set("current_taskId", String(taskIds[0]));
-          pm.execution.setNextRequest("09 - GetAllSubTasksListPagingFO");
+          // No setNextRequest — natural Runner order proceeds to 09.
+          // If 09 is unchecked, Postman will skip it and move to the next enabled request.
       } else {
           var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
           if (imageIds.length > 0) {

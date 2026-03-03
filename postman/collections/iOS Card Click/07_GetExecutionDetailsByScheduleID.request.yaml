@@ -44,88 +44,33 @@ scripts:
           }
       }
 
-      var baseUrl = pm.environment.get("base_url");
-      var token   = pm.environment.get("token");
-      var scheduleID = pm.environment.get("scheduleID");
-      var clientId = pm.environment.get("clientId");
-      var verticalId = pm.environment.get("verticalId");
-      var languageId = pm.environment.get("languageId");
-      var userId = pm.environment.get("userId");
+      // Save image queue for 10 - GetImageData
+      pm.environment.set("checklist_imageIds", JSON.stringify(imageIds));
+      if (imageIds.length > 0) {
+          pm.environment.set("image_exeId", String(imageIds[0]));
+      } else {
+          pm.environment.set("image_exeId", "0");
+          pm.environment.set("t_GetImageData_ms", "SKIPPED");
+      }
 
-      console.log("[GetExecutionDetails] Chaining to 11. Background Processing: Tasks=" + exeDetailIds.length + ", ImageRecords=" + imageIds.length);
-      
+      // 08 - GetTaskListByScheduleId uses scheduleID directly (no per-ID queue needed).
+      // If no tasks exist, mark 08 and 09 as skipped and chain forward.
+      if (exeDetailIds.length === 0) {
+          pm.environment.set("t_GetTaskListByScheduleId_ms", "SKIPPED");
+          pm.environment.set("t_GetAllSubTasks_ms", "SKIPPED");
+          if (imageIds.length > 0) {
+              pm.execution.setNextRequest("10 - GetImageData");
+          } else {
+              pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          }
+      }
+      // If exeDetailIds exist, let natural Runner order proceed to 08.
+      // If 08 is unchecked, Postman will skip it and move to the next enabled request.
+
+      console.log("[GetExecutionDetails] Tasks=" + exeDetailIds.length + ", ImageRecords=" + imageIds.length);
       pm.test("BG: Initiating " + exeDetailIds.length + " Task/Sub-task fetches", function() { pm.expect(true).to.be.true; });
       pm.test("BG: Initiating downloads for " + imageIds.length + " Image records", function() { pm.expect(true).to.be.true; });
 
-      // --- BRANCH 1: PARALLEL TASKS ---
-      if (exeDetailIds.length > 0) {
-          var taskUrl = baseUrl + "/TaskManager.svc/GetTaskListByScheduleId?clientId=" + clientId + "&pageIndex=0&filterCondition=&recordCount=0&scheduleId=" + scheduleID + "&verticalId=" + verticalId + "&languageId=" + languageId + "&pageSize=50&attFamily=9&userId=" + userId;
-          
-          pm.sendRequest({
-              url: taskUrl,
-              method: "GET",
-              header: { "Authorization": token }
-          }, function(err, res) {
-              if (err) {
-                  console.error("[BG-Tasks] Error fetching task list: " + err);
-                  return;
-              }
-              var data = res.json();
-              var results = data.GetTaskListByScheduleIdResult || [];
-              console.log("[BG-Tasks] Received " + results.length + " results.");
-              
-              results.forEach(function(item) {
-                  if (item.TaskData) {
-                      try {
-                          var taskList = JSON.parse(item.TaskData);
-                          taskList.forEach(function(t) {
-                              if (t.ID) {
-                                  // Fetch sub-tasks for each found taskId
-                                  var subUrl = baseUrl + "/TaskManager.svc/GetAllSubTasksListPagingFO?verticalId=" + verticalId + "&pageSize=100&filterCondition=&sortingOrder=&clientId=" + clientId + "&taskId=" + t.ID + "&pageIndex=0&recordCount=0";
-                                  pm.sendRequest({
-                                      url: subUrl,
-                                      method: "GET",
-                                      header: { "Authorization": token }
-                                  }, function(sErr, sRes) {
-                                      if (!sErr) {
-                                          var sData = sRes.json();
-                                          var subs = sData.GetAllSubTasksListPagingFOResult || [];
-                                          console.log("[BG-SubTasks] Task " + t.ID + " => " + subs.length + " sub-tasks retrieved.");
-                                      }
-                                  });
-                              }
-                          });
-                      } catch(e) { console.error("[BG-Tasks] Parse error: " + e.message); }
-                  }
-              });
-          });
-      }
-
-      // --- BRANCH 2: PARALLEL IMAGES ---
-      imageIds.forEach(function(exeId) {
-          var imgDataUrl = baseUrl + "/ProInspectorJson.svc/GetImageData?m_intChecklistExeDetailsId=" + exeId;
-          pm.sendRequest({
-              url: imgDataUrl,
-              method: "GET",
-              header: { "Authorization": token }
-          }, function(err, res) {
-              if (!err) {
-                  var data = res.json();
-                  var imgs = data.GetImageDataResult || [];
-                  console.log("[BG-Images] DetailID " + exeId + " => " + imgs.length + " images found.");
-                  imgs.forEach(function(img) {
-                      if (img.dbImagePath && img.dbImagePath.trim() !== "") {
-                          pm.sendRequest({ url: img.dbImagePath, method: "GET" }, function(dErr, dRes) {
-                              if (!dErr) console.log("[BG-Download] Success: " + img.dbImageName + " (" + dRes.code + ")");
-                          });
-                      }
-                  });
-              }
-          });
-      });
-
-      // --- CHANCE RUNNER TO SKIP 08, 09, 10 ---
-      pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
-
       var elapsed = Date.now() - overallStart;
       pm.environment.set("t_GetExecutionDetails_ms", elapsed);
+
