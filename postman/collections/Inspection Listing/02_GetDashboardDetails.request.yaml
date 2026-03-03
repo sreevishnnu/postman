@@ -1,0 +1,62 @@
+$kind: http-request
+name: "02 - GetDashboardDetails (Parallel Reference)"
+url: "{{base_url}}/ProInspectorJsonV1.svc/GetDashboardDetails"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "clientId": 4,
+        "languageId": 1,
+        "verticalId": 1,
+        "userID": 411,
+        "inspectorID": 411,
+        "entityID": -1,
+        "establishmentID": 0,
+        "pageSize": 50,
+        "pageIndex": 0,
+        "isGroupUsersScheduledList": 0,
+        "isUnScheduledProjectList": 0,
+        "recordCount": 0,
+        "attributesFamilyId": 0,
+        "inspectionFilters": {
+            "StartDate": "01/02/2026",
+            "EndDate": "09/03/2026",
+            "commonFilter": "",
+            "objectIds": "",
+            "inspectionStatus": "",
+            "checklistID": "",
+            "isShowClosedInspection": 0,
+            "isViewAllInspections": 0,
+            "productID": 5
+        }
+    }
+headers:
+  - name: Authorization
+    value: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000002
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      // Record start time for GetDashboardDetails
+      pm.environment.set("t_GetDashboardDetails_start", Date.now());
+      console.log("[GetDashboardDetails] Request started at: " + new Date().toISOString());
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var startTime = pm.environment.get("t_GetDashboardDetails_start");
+      var elapsed = Date.now() - parseInt(startTime);
+
+      pm.environment.set("t_GetDashboardDetails_ms", elapsed);
+      console.log("[GetDashboardDetails] Completed in " + elapsed + " ms");
+
+      // Test assertions
+      pm.test("GetDashboardDetails - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("GetDashboardDetails - Response time < 5000ms", function () {
+          pm.expect(elapsed).to.be.below(5000);
+      });

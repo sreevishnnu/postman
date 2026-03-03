@@ -1,0 +1,81 @@
+$kind: http-request
+name: "01 - GetInspections"
+url: "{{base_url}}/ProInspectorJsonV1.svc/GetInspections"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "clientId": 4,
+        "languageId": 1,
+        "verticalId": 1,
+        "userID": 411,
+        "inspectorID": 411,
+        "entityID": -1,
+        "establishmentID": 0,
+        "pageSize": 50,
+        "pageIndex": 0,
+        "isGroupUsersScheduledList": 0,
+        "isUnScheduledProjectList": 0,
+        "recordCount": 0,
+        "attributesFamilyId": 0,
+        "inspectionFilters": {
+            "StartDate": "01/02/2026",
+            "EndDate": "09/03/2026",
+            "commonFilter": "",
+            "objectIds": "",
+            "inspectionStatus": "",
+            "checklistID": "",
+            "isShowClosedInspection": 0,
+            "isViewAllInspections": 0,
+            "productID": 5
+        }
+    }
+headers:
+  - name: Authorization
+    value: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000001
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      // Reset timing results
+      pm.environment.set("timing_results", JSON.stringify([]));
+
+      // Record start time for GetInspections
+      pm.environment.set("t_GetInspections_start", Date.now());
+      console.log("[GetInspections] Request started at: " + new Date().toISOString());
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var startTime = pm.environment.get("t_GetInspections_start");
+      var elapsed = Date.now() - parseInt(startTime);
+
+      pm.environment.set("t_GetInspections_ms", elapsed);
+      console.log("[GetInspections] Completed in " + elapsed + " ms");
+
+      // Store inspection data for downstream requests
+      var jsonData = pm.response.json();
+      var result = jsonData.GetInspectionsResult;
+
+      if (result && result.length > 0) {
+          // Store first inspection for chained calls
+          var first = result[0];
+          pm.environment.set("inspectionID", first.InspectionID || "");
+          pm.environment.set("masterID",     first.MasterID     || "");
+          pm.environment.set("tableCode",    first.TableCode    || "");
+          console.log("[GetInspections] Total records: " + result.length);
+          console.log("[GetInspections] Using InspectionID=" + pm.environment.get("inspectionID") + ", MasterID=" + pm.environment.get("masterID") + ", TableCode=" + pm.environment.get("tableCode"));
+      } else {
+          console.warn("[GetInspections] No inspection records returned.");
+      }
+
+      // Test assertion
+      pm.test("GetInspections - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("GetInspections - Response time < 5000ms", function () {
+          pm.expect(elapsed).to.be.below(5000);
+      });
