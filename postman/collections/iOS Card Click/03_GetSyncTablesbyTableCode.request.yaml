@@ -1,0 +1,50 @@
+$kind: http-request
+name: 03 - GetSyncTablesbyTableCode
+url: "{{base_url}}/ProInspectorJson.svc/GetSyncTablesbyTableCode?clientId={{cli\
+  entId}}&languageId={{languageId}}&verticalId={{verticalId}}&userId={{userId}}\
+  &tableCode=CC_CONFIG&referenceId={{checklistId}}"
+method: GET
+headers:
+  Authorization: "{{token}}"
+queryParams:
+  clientId: "{{clientId}}"
+  languageId: "{{languageId}}"
+  verticalId: "{{verticalId}}"
+  userId: "{{userId}}"
+  tableCode: CC_CONFIG
+  referenceId: "{{checklistId}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000003
+scripts:
+  - type: beforeRequest
+    code: >-
+      pm.environment.set("t_GetSyncTables_start", Date.now());
+
+      console.log("[GetSyncTablesbyTableCode] Request started at: " + new
+      Date().toISOString());
+
+      console.log("[GetSyncTablesbyTableCode] checklistId: " +
+      pm.environment.get("checklistId"));
+    language: text/javascript
+  - type: afterResponse
+    code: >-
+      var startTime = pm.environment.get("t_GetSyncTables_start");
+
+      var elapsed = Date.now() - parseInt(startTime);
+
+
+      pm.environment.set("t_GetSyncTables_ms", elapsed);
+
+      console.log("[GetSyncTablesbyTableCode] Completed in " + (elapsed /
+      1000).toFixed(2) + " s");
+
+
+      pm.test("GetSyncTablesbyTableCode - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("GetSyncTablesbyTableCode - Response time < 5000ms", function () {
+          pm.expect(elapsed).to.be.below(5000);
+      });
+    language: text/javascript

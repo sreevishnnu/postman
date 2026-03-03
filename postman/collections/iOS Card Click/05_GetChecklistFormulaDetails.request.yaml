@@ -1,0 +1,39 @@
+$kind: http-request
+name: "05 - GetChecklistFormulaDetails"
+url: "{{base_url}}/ProInspectorJson.svc/GetChecklistFormulaDetails?checklistId={{checklistId}}&pageSize=50&startIndex=0&recordCount=0"
+method: GET
+headers:
+  Authorization: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000005
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.environment.set("t_GetChecklistFormulaDetails_start", Date.now());
+      console.log("[GetChecklistFormulaDetails] Request started at: " + new Date().toISOString());
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var startTime = pm.environment.get("t_GetChecklistFormulaDetails_start");
+      var elapsed = Date.now() - parseInt(startTime);
+
+      pm.environment.set("t_GetChecklistFormulaDetails_ms", elapsed);
+      console.log("[GetChecklistFormulaDetails] Completed in " + (elapsed / 1000).toFixed(2) + " s");
+
+      // Chaining for Runner
+      pm.environment.set("t_GetChecklistFormulaDetails_ms", Date.now() - parseInt(pm.environment.get("t_GetChecklistFormulaDetails_start")));
+      var hasInternalTable = pm.environment.get("checklist_hasInternalTable");
+      if (hasInternalTable === "true") {
+          pm.execution.setNextRequest("06 - GetAllInternalTablesByMasterID");
+      } else {
+          pm.execution.setNextRequest("07 - GetExecutionDetailsByScheduleID");
+      }
+
+      pm.test("GetChecklistFormulaDetails - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("GetChecklistFormulaDetails - Response time < 5000ms", function () {
+          pm.expect(elapsed).to.be.below(5000);
+      });

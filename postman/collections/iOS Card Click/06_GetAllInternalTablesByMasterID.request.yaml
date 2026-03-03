@@ -1,0 +1,75 @@
+$kind: http-request
+name: "06 - GetAllInternalTablesByMasterID"
+url: "{{base_url}}/ProInspectorJson.svc/GetAllInternalTablesByMasterID?clientId={{clientId}}&languageId={{languageId}}&verticalId={{verticalId}}&filterCondition=&pageSize=0&pageIndex=0&parentId={{internalTable_parentId}}&recordCount=0"
+method: GET
+headers:
+  Authorization: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000006
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.environment.set("t_GetAllInternalTables_start", Date.now());
+      console.log("[GetAllInternalTablesByMasterID] Request started at: " + new Date().toISOString());
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.execution.setNextRequest("07 - GetExecutionDetailsByScheduleID");
+      var overallStart = parseInt(pm.environment.get("t_GetAllInternalTables_start"));
+
+      // Fire additional parentId calls in parallel using pm.sendRequest
+      var parentIds = JSON.parse(pm.environment.get("checklist_parentIds") || "[]");
+      var baseUrl = pm.environment.get("base_url");
+      var token   = pm.environment.get("token");
+
+      // First parentId was sent as the main request
+      var firstPid = parentIds[0];
+      console.log("[GetAllInternalTablesByMasterID] parentId=" + firstPid + " => main request completed");
+
+      var remaining = parentIds.slice(1);
+      var pending   = remaining.length;
+
+      if (pending === 0) {
+          var elapsed = Date.now() - overallStart;
+          pm.environment.set("t_GetAllInternalTables_ms", elapsed);
+          console.log("[GetAllInternalTablesByMasterID] All parentId calls done. Total: " + (elapsed / 1000).toFixed(2) + " s");
+          return;
+      }
+
+      for (var i = 0; i < remaining.length; i++) {
+          (function(pid) {
+              var reqUrl = baseUrl + "/ProInspectorJson.svc/GetAllInternalTablesByMasterID"
+                  + "?clientId=" + pm.environment.get("clientId")
+                  + "&languageId=" + pm.environment.get("languageId")
+                  + "&verticalId=" + pm.environment.get("verticalId")
+                  + "&filterCondition=&pageSize=0&pageIndex=0"
+                  + "&parentId=" + pid + "&recordCount=0";
+
+              var reqStart = Date.now();
+              pm.sendRequest({
+                  url: reqUrl,
+                  method: "GET",
+                  header: { "Authorization": token }
+              }, function(err, res) {
+                  var reqElapsed = Date.now() - reqStart;
+                  var wallElapsed = Date.now() - overallStart;
+                  if (err) {
+                      console.error("[GetAllInternalTablesByMasterID] parentId=" + pid + " ERROR: " + err);
+                  } else {
+                      console.log("[GetAllInternalTablesByMasterID] parentId=" + pid + " => " + res.code + " | " + (reqElapsed / 1000).toFixed(2) + " s (wall: " + (wallElapsed / 1000).toFixed(2) + " s)");
+                  }
+                  pending--;
+                  if (pending === 0) {
+                      var totalElapsed = Date.now() - overallStart;
+                      pm.environment.set("t_GetAllInternalTables_ms", totalElapsed);
+                      console.log("[GetAllInternalTablesByMasterID] All parentId calls completed. Total wall time: " + (totalElapsed / 1000).toFixed(2) + " s");
+                  }
+              });
+          })(remaining[i]);
+      }
+
+      pm.test("GetAllInternalTablesByMasterID - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
