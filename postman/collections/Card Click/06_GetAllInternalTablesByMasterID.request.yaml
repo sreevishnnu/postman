@@ -1,6 +1,6 @@
 $kind: http-request
 name: "06 - GetAllInternalTablesByMasterID"
-url: "{{base_url}}/ProInspectorJson.svc/GetAllInternalTablesByMasterID?clientId=4&languageId=1&verticalId=1&filterCondition=&pageSize=0&pageIndex=0&parentId={{internalTable_parentId}}&recordCount=0"
+url: "{{base_url}}/ProInspectorJson.svc/GetAllInternalTablesByMasterID?clientId={{clientId}}&languageId={{languageId}}&verticalId={{verticalId}}&filterCondition=&pageSize=0&pageIndex=0&parentId={{internalTable_parentId}}&recordCount=0"
 method: GET
 headers:
   Authorization: "{{token}}"
@@ -54,7 +54,9 @@ scripts:
       for (var i = 0; i < remaining.length; i++) {
           (function(pid) {
               var reqUrl = baseUrl + "/ProInspectorJson.svc/GetAllInternalTablesByMasterID"
-                  + "?clientId=4&languageId=1&verticalId=1"
+                  + "?clientId=" + pm.environment.get("clientId")
+                  + "&languageId=" + pm.environment.get("languageId")
+                  + "&verticalId=" + pm.environment.get("verticalId")
                   + "&filterCondition=&pageSize=0&pageIndex=0"
                   + "&parentId=" + pid + "&recordCount=0";
 

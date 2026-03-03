@@ -23,5 +23,12 @@ scripts:
     language: text/javascript
     code: |-
       var jsonData = pm.response.json();
-      var userToken = jsonData.ValidateLoginTokenResult.UserToken;
-      pm.environment.set("token", userToken);
+      var result = jsonData.ValidateLoginTokenResult;
+
+      pm.environment.set("token",      result.UserToken);
+      pm.environment.set("clientId",   result.EnterpriseId);
+      pm.environment.set("languageId", result.LanguageID);
+      pm.environment.set("userId",     result.UserID);
+      pm.environment.set("verticalId", result.VerticalId);
+
+      console.log("[ValidateLoginToken] token set. clientId=" + result.EnterpriseId + " userId=" + result.UserID + " languageId=" + result.LanguageID + " verticalId=" + result.VerticalId);

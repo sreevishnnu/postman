@@ -1,6 +1,6 @@
 $kind: http-request
 name: "08 - UpdateofflineInspectionStatus"
-url: "{{base_url}}/ProInspectorJson.svc/UpdateofflineInspectionStatus?userId=411&scheduleId={{scheduleID}}&isDownloaded=1"
+url: "{{base_url}}/ProInspectorJson.svc/UpdateofflineInspectionStatus?userId={{userId}}&scheduleId={{scheduleID}}&isDownloaded=1"
 method: GET
 headers:
   Authorization: "{{token}}"
@@ -37,6 +37,7 @@ scripts:
           { label: "05 GetChecklistFormulaDetails",     env: "t_GetChecklistFormulaDetails_ms" },
           { label: "06 GetAllInternalTablesByMasterID", env: "t_GetAllInternalTables_ms" },
           { label: "07 GetExecutionDetailsByScheduleID",env: "t_GetExecutionDetails_ms" },
+          { label: "   GetImageData (images)",           env: "t_GetImageData_ms" },
           { label: "08 UpdateofflineInspectionStatus",  env: "t_UpdateofflineStatus_ms" }
       ];
       var lines = ["=== CARD CLICK - TIMING SUMMARY ==="];

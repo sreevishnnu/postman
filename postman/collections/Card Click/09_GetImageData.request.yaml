@@ -1,0 +1,79 @@
+$kind: http-request
+name: "09 - GetImageData"
+url: "{{base_url}}/ProInspectorJson.svc/GetImageData?m_intChecklistExeDetailsId={{image_exeId}}"
+method: GET
+headers:
+  Authorization: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000009
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      var hasImages = pm.environment.get("checklist_hasImages");
+      if (hasImages !== "true") {
+          console.log("[GetImageData] SKIPPED - no items with images.");
+          pm.environment.set("t_GetImageData_ms", "SKIPPED");
+          pm.environment.set("skip_images", "true");
+      } else {
+          pm.environment.set("skip_images", "false");
+          pm.environment.set("t_GetImageData_start", Date.now());
+          console.log("[GetImageData] Request started at: " + new Date().toISOString());
+      }
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      if (pm.environment.get("skip_images") === "true") {
+          return;
+      }
+
+      var overallStart = parseInt(pm.environment.get("t_GetImageData_start"));
+
+      // Fire additional image calls in parallel using pm.sendRequest
+      var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+      var baseUrl  = pm.environment.get("base_url");
+      var token    = pm.environment.get("token");
+
+      // First imageId was sent as the main request
+      var firstId = imageIds[0];
+      console.log("[GetImageData] ID=" + firstId + " => main request completed");
+
+      var remaining = imageIds.slice(1);
+      var pending   = remaining.length;
+
+      if (pending === 0) {
+          var elapsed = Date.now() - overallStart;
+          pm.environment.set("t_GetImageData_ms", elapsed);
+          console.log("[GetImageData] All image calls completed in " + (elapsed / 1000).toFixed(2) + " s");
+          return;
+      }
+
+      for (var i = 0; i < remaining.length; i++) {
+          (function(exeId) {
+              var reqUrl = baseUrl + "/ProInspectorJson.svc/GetImageData?m_intChecklistExeDetailsId=" + exeId;
+
+              pm.sendRequest({
+                  url: reqUrl,
+                  method: "GET",
+                  header: [{ key: "Authorization", value: token }]
+              }, function(err, res) {
+                  var elapsed = Date.now() - overallStart;
+                  if (err) {
+                      console.error("[GetImageData] ID=" + exeId + " ERROR: " + err);
+                  } else {
+                      console.log("[GetImageData] ID=" + exeId + " => " + res.code + " (" + (elapsed / 1000).toFixed(2) + " s so far)");
+                  }
+                  pending--;
+                  if (pending === 0) {
+                      var totalElapsed = Date.now() - overallStart;
+                      pm.environment.set("t_GetImageData_ms", totalElapsed);
+                      console.log("[GetImageData] All image calls completed in " + (totalElapsed / 1000).toFixed(2) + " s");
+                  }
+              });
+          })(remaining[i]);
+      }
+
+      pm.test("GetImageData - Status 200", function () {
+          pm.response.to.have.status(200);
+      });

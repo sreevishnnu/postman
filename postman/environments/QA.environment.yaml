@@ -4,7 +4,7 @@ values:
     value: 'https://qa.pro-inspector.net/V4-WCF'
     enabled: true
   - key: token
-    value: 584f58b8-ac8e-4136-9dfe-3f44996708d3
+    value: d9c686d6-c500-4467-8ba4-315f4854caef
     enabled: true
   - key: timing_results
     value: ''
@@ -92,5 +92,35 @@ values:
     enabled: true
   - key: t_UpdateofflineStatus_ms
     value: ''
+    enabled: true
+  - key: t_GetImageData_ms
+    value: ''
+    enabled: true
+  - key: skip_images
+    value: ''
+    enabled: true
+  - key: checklist_hasImages
+    value: ''
+    enabled: true
+  - key: checklist_imageIds
+    value: ''
+    enabled: true
+  - key: image_exeId
+    value: ''
+    enabled: true
+  - key: t_GetImageData_start
+    value: ''
+    enabled: true
+  - key: clientId
+    value: 4
+    enabled: true
+  - key: languageId
+    value: 1
+    enabled: true
+  - key: verticalId
+    value: 1
+    enabled: true
+  - key: userId
+    value: 411
     enabled: true
 color: 0

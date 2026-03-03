@@ -1,6 +1,6 @@
 $kind: http-request
 name: "03 - GetSyncTablesbyTableCode"
-url: "{{base_url}}/ProInspectorJson.svc/GetSyncTablesbyTableCode?clientId=4&languageId=1&verticalId=1&userId=411&tableCode=CC_CONFIG&referenceId={{checklistId}}"
+url: "{{base_url}}/ProInspectorJson.svc/GetSyncTablesbyTableCode?clientId={{clientId}}&languageId={{languageId}}&verticalId={{verticalId}}&userId={{userId}}&tableCode=CC_CONFIG&referenceId={{checklistId}}"
 method: GET
 headers:
   Authorization: "{{token}}"
