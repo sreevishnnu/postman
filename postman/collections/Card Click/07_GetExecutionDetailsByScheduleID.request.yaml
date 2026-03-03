@@ -1,0 +1,31 @@
+$kind: http-request
+name: "07 - GetExecutionDetailsByScheduleID"
+url: "{{base_url}}/ProInspectorJson.svc/GetExecutionDetailsByScheduleID?p_AgendamentorID={{scheduleID}}"
+method: GET
+headers:
+  Authorization: "{{token}}"
+settings:
+  disabledSystemHeaders: []
+order: 1772600000007
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.environment.set("t_GetExecutionDetails_start", Date.now());
+      console.log("[GetExecutionDetailsByScheduleID] Request started at: " + new Date().toISOString());
+      console.log("[GetExecutionDetailsByScheduleID] scheduleID: " + pm.environment.get("scheduleID"));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var startTime = pm.environment.get("t_GetExecutionDetails_start");
+      var elapsed = Date.now() - parseInt(startTime);
+
+      pm.environment.set("t_GetExecutionDetails_ms", elapsed);
+      console.log("[GetExecutionDetailsByScheduleID] Completed in " + (elapsed / 1000).toFixed(2) + " s");
+
+      pm.test("GetExecutionDetailsByScheduleID - Status 200", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("GetExecutionDetailsByScheduleID - Response time < 5000ms", function () {
+          pm.expect(elapsed).to.be.below(5000);
+      });

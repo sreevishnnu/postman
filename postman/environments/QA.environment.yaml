@@ -15,12 +15,6 @@ values:
   - key: t_GetInspections_ms
     value: ''
     enabled: true
-  - key: inspectionID
-    value: ''
-    enabled: true
-  - key: masterID
-    value: ''
-    enabled: true
   - key: tableCode
     value: ''
     enabled: true
@@ -28,6 +22,75 @@ values:
     value: ''
     enabled: true
   - key: t_GetDashboardDetails_ms
+    value: ''
+    enabled: true
+  - key: t_GetSyncTables_start
+    value: ''
+    enabled: true
+  - key: t_GetSyncTables_ms
+    value: ''
+    enabled: true
+  - key: cl_pageSize
+    value: ''
+    enabled: true
+  - key: cl_startIndex
+    value: '0'
+    enabled: true
+  - key: cl_recordCount
+    value: ''
+    enabled: true
+  - key: t_GetChecklistConfiguration_start
+    value: ''
+    enabled: true
+  - key: t_GetChecklistConfiguration_ms
+    value: ''
+    enabled: true
+  - key: checklist_hasFormula
+    value: ''
+    enabled: true
+  - key: checklist_hasInternalTable
+    value: ''
+    enabled: true
+  - key: checklist_parentIds
+    value: ''
+    enabled: true
+  - key: t_GetChecklistFormulaDetails_ms
+    value: ''
+    enabled: true
+  - key: skip_formula
+    value: ''
+    enabled: true
+  - key: t_GetAllInternalTables_ms
+    value: ''
+    enabled: true
+  - key: skip_internalTable
+    value: ''
+    enabled: true
+  - key: t_GetChecklistFormulaDetails_start
+    value: ''
+    enabled: true
+  - key: checklistId
+    value: '17'
+    enabled: true
+  - key: internalTable_parentId
+    value: ''
+    enabled: true
+  - key: t_GetAllInternalTables_start
+    value: ''
+    enabled: true
+  - key: scheduleID
+    value: '336312'
+    enabled: true
+  - key: t_GetExecutionDetails_start
+    value: ''
+    enabled: true
+  - key: t_GetExecutionDetails_ms
+    value: ''
+    enabled: true
+  - key: t_UpdateofflineStatus_start
+    value: ''
+    enabled: true
+  - key: t_UpdateofflineStatus_ms
     value: ''
     enabled: true
 color: 0

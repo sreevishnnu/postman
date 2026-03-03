@@ -1,20 +1,7 @@
 $kind: http-request
 name: "03 - GetSyncTablesbyTableCode"
-url: "{{base_url}}/ProInspectorJson.svc/GetSyncTablesbyTableCode"
+url: "{{base_url}}/ProInspectorJson.svc/GetSyncTablesbyTableCode?clientId=4&languageId=1&verticalId=1&userId=411&tableCode=CC_CONFIG&referenceId={{checklistId}}"
 method: GET
-params:
-  - name: clientId
-    value: "4"
-  - name: languageId
-    value: "1"
-  - name: verticalId
-    value: "1"
-  - name: userId
-    value: "411"
-  - name: tableCode
-    value: "CC_CONFIG"
-  - name: referenceId
-    value: "{{checklistId}}"
 headers:
   Authorization: "{{token}}"
 settings:
@@ -34,7 +21,7 @@ scripts:
       var elapsed = Date.now() - parseInt(startTime);
 
       pm.environment.set("t_GetSyncTables_ms", elapsed);
-      console.log("[GetSyncTablesbyTableCode] Completed in " + elapsed + " ms");
+      console.log("[GetSyncTablesbyTableCode] Completed in " + (elapsed / 1000).toFixed(2) + " s");
 
       pm.test("GetSyncTablesbyTableCode - Status 200", function () {
           pm.response.to.have.status(200);

@@ -1,16 +1,7 @@
 $kind: http-request
 name: "05 - GetChecklistFormulaDetails"
-url: "{{base_url}}/ProInspectorJson.svc/GetChecklistFormulaDetails"
+url: "{{base_url}}/ProInspectorJson.svc/GetChecklistFormulaDetails?checklistId={{checklistId}}&pageSize=50&startIndex=0&recordCount=0"
 method: GET
-params:
-  - name: checklistId
-    value: "{{checklistId}}"
-  - name: pageSize
-    value: "50"
-  - name: startIndex
-    value: "0"
-  - name: recordCount
-    value: "0"
 headers:
   Authorization: "{{token}}"
 settings:
@@ -44,7 +35,7 @@ scripts:
       var elapsed = Date.now() - parseInt(startTime);
 
       pm.environment.set("t_GetChecklistFormulaDetails_ms", elapsed);
-      console.log("[GetChecklistFormulaDetails] Completed in " + elapsed + " ms");
+      console.log("[GetChecklistFormulaDetails] Completed in " + (elapsed / 1000).toFixed(2) + " s");
 
       pm.test("GetChecklistFormulaDetails - Status 200", function () {
           pm.response.to.have.status(200);
@@ -72,14 +63,15 @@ scripts:
                   lines.push("  " + keys[i].label + ": SKIPPED");
               } else if (val) {
                   var ms = parseInt(val);
+                  var s = (ms / 1000).toFixed(2);
                   total += ms;
-                  lines.push("  " + keys[i].label + ": " + ms + " ms");
+                  lines.push("  " + keys[i].label + ": " + s + " s");
               } else {
                   lines.push("  " + keys[i].label + ": (not recorded)");
               }
           }
           lines.push("--------------------------------------");
-          lines.push("  Total: " + total + " ms");
+          lines.push("  Total: " + (total / 1000).toFixed(2) + " s");
           lines.push("======================================");
           console.log(lines.join("\n"));
       }
