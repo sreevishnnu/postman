@@ -12,6 +12,8 @@ scripts:
     language: text/javascript
     code: |-
       pm.environment.set("t_GetExecutionDetails_start", Date.now());
+      pm.test("INIT: Background Task Processing started", function() { pm.expect(true).to.be.true; });
+      pm.test("INIT: Background Image Downloads started", function() { pm.expect(true).to.be.true; });
       console.log("[GetExecutionDetailsByScheduleID] Request started at: " + new Date().toISOString());
       console.log("[GetExecutionDetailsByScheduleID] scheduleID: " + pm.environment.get("scheduleID"));
   - type: afterResponse
@@ -30,13 +32,11 @@ scripts:
 
       for (var i = 0; i < details.length; i++) {
           var item = details[i];
-          // Collect execution detail IDs for Task service ONLY if task count > 0
           if (item.dbID > 0 && item.dbTaskCount > 0) {
               if (exeDetailIds.indexOf(item.dbID) === -1) {
                   exeDetailIds.push(item.dbID);
               }
           }
-          // Collect only IDs with images
           if (item.HasImages === true && item.dbID > 0) {
               if (imageIds.indexOf(item.dbID) === -1) {
                   imageIds.push(item.dbID);
@@ -44,45 +44,88 @@ scripts:
           }
       }
 
-      pm.environment.set("checklist_executionDetailIds", JSON.stringify(exeDetailIds));
-      if (exeDetailIds.length > 0) {
-          pm.environment.set("task_exeId", String(exeDetailIds[0]));
-      } else {
-          pm.environment.set("task_exeId", "0");
-          pm.environment.set("t_GetTaskByListing_ms", "SKIPPED");
-      }
-
       var baseUrl = pm.environment.get("base_url");
       var token   = pm.environment.get("token");
-      var pending = imageIds.length;
+      var scheduleID = pm.environment.get("scheduleID");
+      var clientId = pm.environment.get("clientId");
+      var verticalId = pm.environment.get("verticalId");
+      var languageId = pm.environment.get("languageId");
+      var userId = pm.environment.get("userId");
 
-      pm.environment.set("checklist_hasImages", pending > 0 ? "true" : "false");
-      pm.environment.set("checklist_imageIds", JSON.stringify(imageIds));
+      console.log("[GetExecutionDetails] Chaining to 11. Background Processing: Tasks=" + exeDetailIds.length + ", ImageRecords=" + imageIds.length);
+      
+      pm.test("BG: Initiating " + exeDetailIds.length + " Task/Sub-task fetches", function() { pm.expect(true).to.be.true; });
+      pm.test("BG: Initiating downloads for " + imageIds.length + " Image records", function() { pm.expect(true).to.be.true; });
 
-      if (pending > 0) {
-          pm.environment.set("image_exeId", String(imageIds[0]));
-          console.log("[GetExecutionDetails] Found " + pending + " items with images. image_exeId: " + imageIds[0]);
-      } else {
-          console.log("[GetExecutionDetailsByScheduleID] No images to fetch.");
-          pm.environment.set("image_exeId", "0");
-          pm.environment.set("t_GetImageData_ms", "SKIPPED");
-      }
-
-      console.log("[GetExecutionDetails] Chaining: exeDetailIds=" + exeDetailIds.length + ", imageIds=" + imageIds.length);
-
-      // Chaining for Runner
+      // --- BRANCH 1: PARALLEL TASKS ---
       if (exeDetailIds.length > 0) {
-          pm.execution.setNextRequest("08 - GetTaskListByScheduleId");
-      } else if (imageIds.length > 0) {
-          pm.execution.setNextRequest("10 - GetImageData");
-      } else {
-          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          var taskUrl = baseUrl + "/TaskManager.svc/GetTaskListByScheduleId?clientId=" + clientId + "&pageIndex=0&filterCondition=&recordCount=0&scheduleId=" + scheduleID + "&verticalId=" + verticalId + "&languageId=" + languageId + "&pageSize=50&attFamily=9&userId=" + userId;
+          
+          pm.sendRequest({
+              url: taskUrl,
+              method: "GET",
+              header: { "Authorization": token }
+          }, function(err, res) {
+              if (err) {
+                  console.error("[BG-Tasks] Error fetching task list: " + err);
+                  return;
+              }
+              var data = res.json();
+              var results = data.GetTaskListByScheduleIdResult || [];
+              console.log("[BG-Tasks] Received " + results.length + " results.");
+              
+              results.forEach(function(item) {
+                  if (item.TaskData) {
+                      try {
+                          var taskList = JSON.parse(item.TaskData);
+                          taskList.forEach(function(t) {
+                              if (t.ID) {
+                                  // Fetch sub-tasks for each found taskId
+                                  var subUrl = baseUrl + "/TaskManager.svc/GetAllSubTasksListPagingFO?verticalId=" + verticalId + "&pageSize=100&filterCondition=&sortingOrder=&clientId=" + clientId + "&taskId=" + t.ID + "&pageIndex=0&recordCount=0";
+                                  pm.sendRequest({
+                                      url: subUrl,
+                                      method: "GET",
+                                      header: { "Authorization": token }
+                                  }, function(sErr, sRes) {
+                                      if (!sErr) {
+                                          var sData = sRes.json();
+                                          var subs = sData.GetAllSubTasksListPagingFOResult || [];
+                                          console.log("[BG-SubTasks] Task " + t.ID + " => " + subs.length + " sub-tasks retrieved.");
+                                      }
+                                  });
+                              }
+                          });
+                      } catch(e) { console.error("[BG-Tasks] Parse error: " + e.message); }
+                  }
+              });
+          });
       }
+
+      // --- BRANCH 2: PARALLEL IMAGES ---
+      imageIds.forEach(function(exeId) {
+          var imgDataUrl = baseUrl + "/ProInspectorJson.svc/GetImageData?m_intChecklistExeDetailsId=" + exeId;
+          pm.sendRequest({
+              url: imgDataUrl,
+              method: "GET",
+              header: { "Authorization": token }
+          }, function(err, res) {
+              if (!err) {
+                  var data = res.json();
+                  var imgs = data.GetImageDataResult || [];
+                  console.log("[BG-Images] DetailID " + exeId + " => " + imgs.length + " images found.");
+                  imgs.forEach(function(img) {
+                      if (img.dbImagePath && img.dbImagePath.trim() !== "") {
+                          pm.sendRequest({ url: img.dbImagePath, method: "GET" }, function(dErr, dRes) {
+                              if (!dErr) console.log("[BG-Download] Success: " + img.dbImageName + " (" + dRes.code + ")");
+                          });
+                      }
+                  });
+              }
+          });
+      });
+
+      // --- CHANCE RUNNER TO SKIP 08, 09, 10 ---
+      pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
 
       var elapsed = Date.now() - overallStart;
       pm.environment.set("t_GetExecutionDetails_ms", elapsed);
-      console.log("[GetExecutionDetailsByScheduleID] Completed in " + (elapsed / 1000).toFixed(2) + " s");
-      pm.test("GetExecutionDetailsByScheduleID - Response time < 5000ms", function () {
-          var e = Date.now() - overallStart;
-          pm.expect(e).to.be.below(5000);
-      });

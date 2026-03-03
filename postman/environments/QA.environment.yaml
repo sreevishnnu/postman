@@ -165,4 +165,13 @@ values:
   - key: t_GetTaskListByScheduleId_ms
     value: ''
     enabled: true
+  - key: current_taskId
+    value: ''
+    enabled: true
+  - key: t_GetTaskByListing_start
+    value: ''
+    enabled: true
+  - key: t_GetTaskInfo_start
+    value: ''
+    enabled: true
 color: 0

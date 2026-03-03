@@ -22,6 +22,7 @@ scripts:
 
       pm.environment.set("t_UpdateofflineStatus_ms", elapsed);
       console.log("[UpdateofflineInspectionStatus] Completed in " + (elapsed / 1000).toFixed(2) + " s");
+      console.log(">>> TIP: Click the 'Console log' tab above OR open 'Postman Console' (Ctrl+Alt+C) to see the Background Parallel processing details!");
 
       pm.test("UpdateofflineInspectionStatus - Status 200", function () {
           pm.response.to.have.status(200);
