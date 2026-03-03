@@ -70,7 +70,7 @@ scripts:
 
       // Chaining for Runner
       if (exeDetailIds.length > 0) {
-          pm.execution.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
+          pm.execution.setNextRequest("08 - GetTaskListByScheduleId");
       } else if (imageIds.length > 0) {
           pm.execution.setNextRequest("10 - GetImageData");
       } else {

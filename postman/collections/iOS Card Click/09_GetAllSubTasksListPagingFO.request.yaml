@@ -1,0 +1,57 @@
+$kind: http-request
+name: 09 - GetAllSubTasksListPagingFO
+url: "{{base_url}}/TaskManager.svc/GetAllSubTasksListPagingFO"
+method: GET
+headers:
+  Authorization: "{{token}}"
+queryParams:
+  clientId: "{{clientId}}"
+  verticalId: "{{verticalId}}"
+  taskId: "{{current_taskId}}"
+  pageIndex: "0"
+  pageSize: "50"
+  sortingOrder: ""
+  recordCount: "0"
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.environment.set("t_GetAllSubTasks_start", Date.now());
+      console.log("[GetAllSubTasksListPagingFO] taskId: " + pm.environment.get("current_taskId"));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var overallStart = parseInt(pm.environment.get("t_GetAllSubTasks_start"));
+      var jsonData = pm.response.json();
+      var subTasks = jsonData.GetAllSubTasksListPagingFOResult || [];
+      
+      console.log("[GetAllSubTasksListPagingFO] Task " + pm.environment.get("current_taskId") + " has " + subTasks.length + " sub-tasks.");
+      
+      // Load the pending task ID list
+      var taskIds = JSON.parse(pm.environment.get("checklist_taskIds") || "[]");
+      
+      // Remove the ID we just processed (the first one)
+      if (taskIds.length > 0) {
+          taskIds.shift();
+      }
+      
+      pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
+      pm.environment.set("t_GetAllSubTasks_ms", Date.now() - overallStart);
+
+      // Chaining: check if more tasks remain
+      if (taskIds.length > 0) {
+          pm.environment.set("current_taskId", String(taskIds[0]));
+          pm.execution.setNextRequest("09 - GetAllSubTasksListPagingFO");
+      } else {
+          pm.environment.unset("current_taskId");
+          var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+          if (imageIds.length > 0) {
+              pm.execution.setNextRequest("10 - GetImageData");
+          } else {
+              pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          }
+      }
+
+      pm.test("GetAllSubTasksListPagingFO - Status 200", function () {
+          pm.response.to.have.status(200);
+      });

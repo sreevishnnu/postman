@@ -1,0 +1,55 @@
+$kind: http-request
+name: 08 - GetTaskListByScheduleId
+url: "{{base_url}}/TaskManager.svc/GetTaskListByScheduleId"
+method: GET
+headers:
+  Authorization: "{{token}}"
+queryParams:
+  clientId: "{{clientId}}"
+  languageId: "{{languageId}}"
+  scheduleId: "{{scheduleId}}"
+  attFamily: "9"
+  pageSize: "50"
+  pageIndex: "0"
+  recordCount: "0"
+  userId: "{{userId}}"
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.environment.set("t_GetTaskListByScheduleId_start", Date.now());
+      console.log("[GetTaskListByScheduleId] Request started at: " + new Date().toISOString());
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      var overallStart = parseInt(pm.environment.get("t_GetTaskListByScheduleId_start"));
+      var jsonData = pm.response.json();
+      var results = jsonData.GetTaskListByScheduleIdResult || [];
+      
+      console.log("[GetTaskListByScheduleId] Received " + results.length + " tasks.");
+      
+      // Collect image IDs if any are present in the tasks
+      var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+      var taskIds = [];
+      results.forEach(function(task) {
+          if (task.dbID && task.dbID !== 0) {
+              taskIds.push(task.dbID);
+          }
+      });
+      
+      pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
+      pm.environment.set("t_GetTaskListByScheduleId_ms", Date.now() - overallStart);
+
+      // Chaining to next step
+      if (taskIds.length > 0) {
+          pm.environment.set("current_taskId", String(taskIds[0]));
+          pm.execution.setNextRequest("09 - GetAllSubTasksListPagingFO");
+      } else if (imageIds.length > 0) {
+          pm.execution.setNextRequest("10 - GetImageData");
+      } else {
+          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+      }
+
+      pm.test("GetTaskListByScheduleId - Status 200", function () {
+          pm.response.to.have.status(200);
+      });

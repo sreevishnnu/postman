@@ -153,4 +153,7 @@ values:
   - key: t_GetTaskInfo_ms
     value: ' '
     enabled: true
+  - key: current_taskId
+    value: ''
+    enabled: true
 color: 0
