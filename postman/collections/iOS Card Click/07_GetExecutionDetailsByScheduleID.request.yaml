@@ -61,12 +61,14 @@ scripts:
 
       if (pending > 0) {
           pm.environment.set("image_exeId", String(imageIds[0]));
-          console.log("[GetExecutionDetails] Found " + pending + " items with images. Saved for next request.");
+          console.log("[GetExecutionDetails] Found " + pending + " items with images. image_exeId: " + imageIds[0]);
       } else {
           console.log("[GetExecutionDetailsByScheduleID] No images to fetch.");
           pm.environment.set("image_exeId", "0");
           pm.environment.set("t_GetImageData_ms", "SKIPPED");
       }
+
+      console.log("[GetExecutionDetails] Chaining: exeDetailIds=" + exeDetailIds.length + ", imageIds=" + imageIds.length);
 
       // Chaining for Runner
       if (exeDetailIds.length > 0) {

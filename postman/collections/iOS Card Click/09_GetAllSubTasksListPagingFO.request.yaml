@@ -1,23 +1,15 @@
 $kind: http-request
 name: 09 - GetAllSubTasksListPagingFO
-url: "{{base_url}}/TaskManager.svc/GetAllSubTasksListPagingFO"
+url: "{{base_url}}/TaskManager.svc/GetAllSubTasksListPagingFO?verticalId={{verticalId}}&pageSize=100&filterCondition=&sortingOrder=&clientId={{clientId}}&taskId={{current_taskId}}&pageIndex=0&recordCount=0"
 method: GET
 headers:
   Authorization: "{{token}}"
-queryParams:
-  clientId: "{{clientId}}"
-  verticalId: "{{verticalId}}"
-  taskId: "{{current_taskId}}"
-  pageIndex: "0"
-  pageSize: "50"
-  sortingOrder: ""
-  recordCount: "0"
 scripts:
   - type: beforeRequest
     language: text/javascript
     code: |-
       pm.environment.set("t_GetAllSubTasks_start", Date.now());
-      console.log("[GetAllSubTasksListPagingFO] taskId: " + pm.environment.get("current_taskId"));
+      console.log("[GetAllSubTasksListPagingFO] Requesting for taskId: " + pm.environment.get("current_taskId"));
   - type: afterResponse
     language: text/javascript
     code: |-
@@ -25,14 +17,12 @@ scripts:
       var jsonData = pm.response.json();
       var subTasks = jsonData.GetAllSubTasksListPagingFOResult || [];
       
-      console.log("[GetAllSubTasksListPagingFO] Task " + pm.environment.get("current_taskId") + " has " + subTasks.length + " sub-tasks.");
+      console.log("[GetAllSubTasksListPagingFO] Received " + subTasks.length + " sub-tasks.");
       
       var taskIds = JSON.parse(pm.environment.get("checklist_taskIds") || "[]");
-      
       if (taskIds.length > 0) {
           taskIds.shift();
       }
-      
       pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
       pm.environment.set("t_GetAllSubTasks_ms", Date.now() - overallStart);
 
@@ -42,6 +32,7 @@ scripts:
       } else {
           pm.environment.unset("current_taskId");
           var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+          console.log("[GetAllSubTasksListPagingFO] Flow complete. Chaining based on imageIds: " + imageIds.length);
           if (imageIds.length > 0) {
               pm.execution.setNextRequest("10 - GetImageData");
           } else {
@@ -49,6 +40,6 @@ scripts:
           }
       }
 
-      pm.test("GetAllSubTasksListPagingFO - Status 200", function () {
+      pm.test("Status 200", function () {
           pm.response.to.have.status(200);
       });

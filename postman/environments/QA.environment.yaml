@@ -106,19 +106,19 @@ values:
     value: ''
     enabled: true
   - key: clientId
-    value: 4
+    value: '5'
     enabled: true
   - key: languageId
-    value: 1
+    value: '1'
     enabled: true
   - key: verticalId
-    value: 1
+    value: '3'
     enabled: true
   - key: userId
-    value: 411
+    value: '412'
     enabled: true
   - key: businessVerticalId
-    value: 1
+    value: '3'
     enabled: true
   - key: checklist_executionDetailIds
     value: ''
@@ -160,6 +160,12 @@ values:
     value: ''
     enabled: true
   - key: t_GetAllSubTasks_ms
+    value: ''
+    enabled: true
+  - key: t_GetTaskListByScheduleId_ms
+    value: ''
+    enabled: true
+  - key: current_taskId
     value: ''
     enabled: true
 color: 0

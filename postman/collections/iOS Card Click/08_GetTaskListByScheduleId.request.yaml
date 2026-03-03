@@ -1,54 +1,86 @@
 $kind: http-request
 name: 08 - GetTaskListByScheduleId
-url: "{{base_url}}/TaskManager.svc/GetTaskListByScheduleId"
+url: "{{base_url}}/TaskManager.svc/GetTaskListByScheduleId?clientId={{clientId}\
+  }&pageIndex=0&filterCondition=&recordCount=0&scheduleId={{scheduleID}}&vertic\
+  alId={{verticalId}}&languageId={{languageId}}&pageSize=50&attFamily=9&userId=\
+  {{userId}}"
 method: GET
 headers:
   Authorization: "{{token}}"
 queryParams:
   clientId: "{{clientId}}"
-  languageId: "{{languageId}}"
-  scheduleId: "{{scheduleId}}"
-  attFamily: "9"
-  pageSize: "50"
   pageIndex: "0"
+  filterCondition: ""
   recordCount: "0"
+  scheduleId: "{{scheduleID}}"
+  verticalId: "{{verticalId}}"
+  languageId: "{{languageId}}"
+  pageSize: "50"
+  attFamily: "9"
   userId: "{{userId}}"
 scripts:
   - type: beforeRequest
-    language: text/javascript
-    code: |-
+    code: >-
       pm.environment.set("t_GetTaskListByScheduleId_start", Date.now());
-      console.log("[GetTaskListByScheduleId] Request started at: " + new Date().toISOString());
-  - type: afterResponse
+
+      console.log("[GetTaskListByScheduleId] Requesting for scheduleId: " +
+      pm.environment.get("scheduleId"));
     language: text/javascript
-    code: |-
-      var overallStart = parseInt(pm.environment.get("t_GetTaskListByScheduleId_start"));
+  - type: afterResponse
+    code: >-
+      var overallStart =
+      parseInt(pm.environment.get("t_GetTaskListByScheduleId_start"));
+
       var jsonData = pm.response.json();
+
       var results = jsonData.GetTaskListByScheduleIdResult || [];
-      
-      console.log("[GetTaskListByScheduleId] Received " + results.length + " tasks.");
-      
-      var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+
+
+      console.log("[GetTaskListByScheduleId] Received " + results.length + "
+      result objects.");
+
+
       var taskIds = [];
-      results.forEach(function(task) {
-          if (task.dbID && task.dbID !== 0) {
-              taskIds.push(task.dbID);
+
+      results.forEach(function(item) {
+          if (item.TaskData) {
+              try {
+                  var taskList = JSON.parse(item.TaskData);
+                  taskList.forEach(function(t) {
+                      if (t.ID) {
+                          taskIds.push(t.ID);
+                      }
+                  });
+              } catch(e) {
+                  console.error("[GetTaskListByScheduleId] Error parsing TaskData: " + e.message);
+              }
           }
       });
-      
-      pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
-      pm.environment.set("t_GetTaskListByScheduleId_ms", Date.now() - overallStart);
 
-      // Chaining to next step
+
+      pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
+
+      pm.environment.set("t_GetTaskListByScheduleId_ms", Date.now() -
+      overallStart);
+
+      console.log("[GetTaskListByScheduleId] Extracted IDs: " +
+      JSON.stringify(taskIds));
+
+
       if (taskIds.length > 0) {
           pm.environment.set("current_taskId", String(taskIds[0]));
           pm.execution.setNextRequest("09 - GetAllSubTasksListPagingFO");
-      } else if (imageIds.length > 0) {
-          pm.execution.setNextRequest("10 - GetImageData");
       } else {
-          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+          if (imageIds.length > 0) {
+              pm.execution.setNextRequest("10 - GetImageData");
+          } else {
+              pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          }
       }
 
-      pm.test("GetTaskListByScheduleId - Status 200", function () {
+
+      pm.test("Status 200", function () {
           pm.response.to.have.status(200);
       });
+    language: text/javascript
