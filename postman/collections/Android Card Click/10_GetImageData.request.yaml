@@ -16,55 +16,54 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
       var overallStart = parseInt(pm.environment.get("t_GetImageData_start"));
+      var jsonData = pm.response.json();
+      var results = jsonData.GetImageDataResult || [];
 
-      // Fire additional image calls in parallel using pm.sendRequest
-      var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
-      var baseUrl  = pm.environment.get("base_url");
-      var token    = pm.environment.get("token");
+      console.log("[GetImageData] Detail ID: " + pm.environment.get("image_exeId"));
+      console.log("[GetImageData] Found " + results.length + " images in this record.");
 
-      // First imageId was sent as the main request
-      var firstId = imageIds[0];
-      console.log("[GetImageData] ID=" + firstId + " => main request completed");
-
-      var remaining = imageIds.slice(1);
-      var pending   = remaining.length;
-
-      if (pending === 0) {
-          var elapsed = Date.now() - overallStart;
-          pm.environment.set("t_GetImageData_ms", elapsed);
-          console.log("[GetImageData] All image calls completed in " + (elapsed / 1000).toFixed(2) + " s");
-          return;
-      }
-
-      for (var i = 0; i < remaining.length; i++) {
-          (function(exeId) {
-              var reqUrl = baseUrl + "/ProInspectorJson.svc/GetImageData?m_intChecklistExeDetailsId=" + exeId;
-
+      // 1. Download images found in this specific response
+      results.forEach(function(img) {
+          if (img.dbImagePath && img.dbImagePath.trim() !== "") {
+              console.log("[GetImageData] Downloading: " + img.dbImageName + " FROM " + img.dbImagePath);
               pm.sendRequest({
-                  url: reqUrl,
-                  method: "GET",
-                  header: [{ key: "Authorization", value: token }]
+                  url: img.dbImagePath,
+                  method: "GET"
               }, function(err, res) {
-                  var elapsed = Date.now() - overallStart;
                   if (err) {
-                      console.error("[GetImageData] ID=" + exeId + " ERROR: " + err);
+                      console.error("[GetImageData] ERROR downloading " + img.dbImageName + ": " + err);
                   } else {
-                      console.log("[GetImageData] ID=" + exeId + " => " + res.code + " (" + (elapsed / 1000).toFixed(2) + " s so far)");
+                      console.log("[GetImageData] SUCCESS: " + img.dbImageName + " (Status: " + res.code + ")");
                   }
-                  pending--;
-                  if (pending === 0) {
-                      var totalElapsed = Date.now() - overallStart;
-                      pm.environment.set("t_GetImageData_ms", totalElapsed);
-                      console.log("[GetImageData] Next imageId: " + String(imageIds[0]));
+              });
+          }
+      });
+
+      // 2. Queue Management
+      var imageIds = [];
+      try {
+          imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+      } catch(e) { imageIds = []; }
+
+      // Remove the ID we just finished
+      if (imageIds.length > 0) {
+          imageIds.shift();
+      }
+      pm.environment.set("checklist_imageIds", JSON.stringify(imageIds));
+      pm.environment.set("t_GetImageData_ms", Date.now() - overallStart);
+
+      // 3. Iterative Chaining
+      if (imageIds.length > 0) {
+          // Process next ID by reloading Request 10
+          pm.environment.set("image_exeId", String(imageIds[0]));
+          console.log("[GetImageData] Moving to next Detail ID: " + imageIds[0]);
           pm.execution.setNextRequest("10 - GetImageData");
       } else {
+          // No more IDs, finish flow
           pm.environment.unset("image_exeId");
-          pm.execution.setNextRequest("11 - FinalSummary");
-      }
-              });
-          })(remaining[i]);
+          console.log("[GetImageData] ALL images for all Detail IDs have been processed.");
+          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
       }
 
       pm.test("GetImageData - Status 200", function () {

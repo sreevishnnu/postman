@@ -69,12 +69,14 @@ scripts:
       }
 
       // Chaining for Runner
-      if (exeDetailIds.length > 0) {
-          pm.execution.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
-      } else if (imageIds.length > 0) {
-          pm.execution.setNextRequest("10 - GetImageData");
-      } else {
-          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+      // When exeDetailIds exist, let natural Runner order go to 08.
+      // If 08 is unchecked, Postman will skip it and move to the next enabled request.
+      if (exeDetailIds.length === 0) {
+          if (imageIds.length > 0) {
+              pm.execution.setNextRequest("10 - GetImageData");
+          } else {
+              pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          }
       }
 
       var elapsed = Date.now() - overallStart;
