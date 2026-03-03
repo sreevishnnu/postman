@@ -60,16 +60,18 @@ scripts:
                   + "&filterCondition=&pageSize=0&pageIndex=0"
                   + "&parentId=" + pid + "&recordCount=0";
 
+              var reqStart = Date.now();
               pm.sendRequest({
                   url: reqUrl,
                   method: "GET",
                   header: { "Authorization": token }
               }, function(err, res) {
-                  var elapsed = Date.now() - overallStart;
+                  var reqElapsed = Date.now() - reqStart;
+                  var wallElapsed = Date.now() - overallStart;
                   if (err) {
                       console.error("[GetAllInternalTablesByMasterID] parentId=" + pid + " ERROR: " + err);
                   } else {
-                      console.log("[GetAllInternalTablesByMasterID] parentId=" + pid + " => " + res.code + " (" + (elapsed / 1000).toFixed(2) + " s so far)");
+                      console.log("[GetAllInternalTablesByMasterID] parentId=" + pid + " => " + res.code + " | " + (reqElapsed / 1000).toFixed(2) + " s (wall: " + (wallElapsed / 1000).toFixed(2) + " s)");
                   }
                   pending--;
                   if (pending === 0) {

@@ -80,10 +80,11 @@ scripts:
                       method: "GET",
                       header: { "Authorization": token }
                   }, function(err, res) {
+                      var pageElapsed = Date.now() - overallStart;
                       if (!err) {
                           var data = res.json();
                           var items = data.GetChecklistConfigurationResult || [];
-                          console.log("[GetChecklistConfiguration] Page " + pageIndex + " returned " + items.length + " items");
+                          console.log("[GetChecklistConfiguration] Page " + pageIndex + " returned " + items.length + " items in " + (pageElapsed / 1000).toFixed(2) + " s");
                           processPage(items);
                       } else {
                           console.error("[GetChecklistConfiguration] Page " + pageIndex + " ERROR: " + err);

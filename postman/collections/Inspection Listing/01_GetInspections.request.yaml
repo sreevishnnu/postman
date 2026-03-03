@@ -60,7 +60,7 @@ scripts:
 
       pm.environment.set("t_GetInspections_ms", elapsed);
 
-      console.log("[GetInspections] Completed in " + elapsed + " ms");
+      console.log("[GetInspections] Completed in " + (elapsed / 1000).toFixed(2) + " s");
 
 
       // Store inspection data for downstream requests

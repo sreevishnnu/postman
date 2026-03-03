@@ -50,7 +50,7 @@ scripts:
       var elapsed = Date.now() - parseInt(startTime);
 
       pm.environment.set("t_GetDashboardDetails_ms", elapsed);
-      console.log("[GetDashboardDetails] Completed in " + elapsed + " ms");
+      console.log("[GetDashboardDetails] Completed in " + (elapsed / 1000).toFixed(2) + " s");
 
       // Test assertions
       pm.test("GetDashboardDetails - Status 200", function () {
