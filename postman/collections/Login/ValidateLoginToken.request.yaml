@@ -1,14 +1,14 @@
 $kind: http-request
-name: "01 - ValidateLoginToken"
+name: 01 - ValidateLoginToken
 url: "{{base_url}}/ProInspectorJsonV1.svc/ValidateLoginToken"
 method: POST
 body:
   type: json
   content: "{\r
 
-    \    \"username\": \"ShlokGasAdmin\",\r
+    \    \"username\": \"ShlokLiftAdmin\",\r
 
-    \    \"password\": \"0nYoiMgrDwe/n+FfOBgSVA==\\n\",\r
+    \    \"password\": \"5ReAxLcBw9gy6zNXdHJAVw==\\n\",\r
 
     \    \"deviceTypeId\": 2,\r
 
@@ -20,18 +20,29 @@ settings:
 order: 1772518434432
 scripts:
   - type: afterResponse
-    language: text/javascript
-    code: |-
+    code: >-
       var jsonData = pm.response.json();
+
       var result = jsonData.ValidateLoginTokenResult;
 
-      pm.environment.set("token",      result.UserToken);
-      pm.environment.set("clientId",   result.EnterpriseId);
-      pm.environment.set("languageId", result.LanguageID);
-      pm.environment.set("userId",     result.UserID);
-      pm.environment.set("verticalId", result.VerticalId);
 
-      console.log("[ValidateLoginToken] token set. clientId=" + result.EnterpriseId + " userId=" + result.UserID + " languageId=" + result.LanguageID + " verticalId=" + result.VerticalId);
+      pm.environment.set("token",      result.UserToken);
+
+      pm.environment.set("clientId",   result.EnterpriseId || 5);
+
+      pm.environment.set("languageId", result.LanguageID);
+
+      pm.environment.set("userId",     result.UserID);
+
+      pm.environment.set("verticalId", result.VerticalId || 3);
+
+
+      console.log("[ValidateLoginToken] token set. clientId=" +
+      result.EnterpriseId + " userId=" + result.UserID + " languageId=" +
+      result.LanguageID + " verticalId=" + result.VerticalId);
+
 
       // Chaining to GetEnterpriseSettings
+
       pm.execution.setNextRequest("02 - GetEnterpriseSettings");
+    language: text/javascript

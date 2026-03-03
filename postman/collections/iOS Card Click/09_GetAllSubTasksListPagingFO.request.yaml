@@ -27,10 +27,8 @@ scripts:
       
       console.log("[GetAllSubTasksListPagingFO] Task " + pm.environment.get("current_taskId") + " has " + subTasks.length + " sub-tasks.");
       
-      // Load the pending task ID list
       var taskIds = JSON.parse(pm.environment.get("checklist_taskIds") || "[]");
       
-      // Remove the ID we just processed (the first one)
       if (taskIds.length > 0) {
           taskIds.shift();
       }
@@ -38,7 +36,6 @@ scripts:
       pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
       pm.environment.set("t_GetAllSubTasks_ms", Date.now() - overallStart);
 
-      // Chaining: check if more tasks remain
       if (taskIds.length > 0) {
           pm.environment.set("current_taskId", String(taskIds[0]));
           pm.execution.setNextRequest("09 - GetAllSubTasksListPagingFO");

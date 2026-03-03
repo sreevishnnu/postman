@@ -9,21 +9,6 @@ values:
   - key: scheduleID
     value: '336340'
     enabled: true
-    key: clientId
-    value: 4
-    enabled: true
-  - key: languageId
-    value: 1
-    enabled: true
-  - key: verticalId
-    value: 1
-    enabled: true
-  - key: userId
-    value: 411
-    enabled: true
-  - key: businessVerticalId
-    value: 1
-    enabled: true
   - key: timing_results
     value: ''
     enabled: true
@@ -43,9 +28,6 @@ values:
     value: ''
     enabled: true
   - key: t_GetSyncTables_start
-    value: ''
-    enabled: true
-  - key: t_GetSyncTables_ms
     value: ''
     enabled: true
   - key: cl_pageSize
@@ -120,11 +102,23 @@ values:
   - key: checklist_imageIds
     value: ''
     enabled: true
-  - key: image_exeId
-    value: ''
-    enabled: true
   - key: t_GetImageData_start
     value: ''
+    enabled: true
+  - key: clientId
+    value: 4
+    enabled: true
+  - key: languageId
+    value: 1
+    enabled: true
+  - key: verticalId
+    value: 1
+    enabled: true
+  - key: userId
+    value: 411
+    enabled: true
+  - key: businessVerticalId
+    value: 1
     enabled: true
   - key: checklist_executionDetailIds
     value: ''
@@ -153,7 +147,19 @@ values:
   - key: t_GetTaskInfo_ms
     value: ' '
     enabled: true
-  - key: current_taskId
+  - key: t_GetSyncTables_ms
+    value: ''
+    enabled: true
+  - key: t_GetTaskListByScheduleId_start
+    value: ''
+    enabled: true
+  - key: t_GetAllSubTasks_start
+    value: ''
+    enabled: true
+  - key: checklist_taskIds
+    value: ''
+    enabled: true
+  - key: t_GetAllSubTasks_ms
     value: ''
     enabled: true
 color: 0

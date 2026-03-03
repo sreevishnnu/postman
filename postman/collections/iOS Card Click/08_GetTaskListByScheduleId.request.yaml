@@ -28,7 +28,6 @@ scripts:
       
       console.log("[GetTaskListByScheduleId] Received " + results.length + " tasks.");
       
-      // Collect image IDs if any are present in the tasks
       var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
       var taskIds = [];
       results.forEach(function(task) {
