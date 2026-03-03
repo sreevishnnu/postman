@@ -15,22 +15,14 @@ scripts:
       if (hasFormula !== "true") {
           console.log("[GetChecklistFormulaDetails] SKIPPED - no formula fields in checklist.");
           pm.environment.set("t_GetChecklistFormulaDetails_ms", "SKIPPED");
-          pm.environment.set("skip_formula", "true");
+          pm.execution.skip();
       } else {
-          pm.environment.set("skip_formula", "false");
           pm.environment.set("t_GetChecklistFormulaDetails_start", Date.now());
           console.log("[GetChecklistFormulaDetails] Request started at: " + new Date().toISOString());
       }
   - type: afterResponse
     language: text/javascript
     code: |-
-      if (pm.environment.get("skip_formula") === "true") {
-          if (pm.environment.get("checklist_hasInternalTable") !== "true") {
-              printTimingSummary();
-          }
-          return;
-      }
-
       var startTime = pm.environment.get("t_GetChecklistFormulaDetails_start");
       var elapsed = Date.now() - parseInt(startTime);
 
@@ -43,35 +35,3 @@ scripts:
       pm.test("GetChecklistFormulaDetails - Response time < 5000ms", function () {
           pm.expect(elapsed).to.be.below(5000);
       });
-
-      if (pm.environment.get("checklist_hasInternalTable") !== "true") {
-          printTimingSummary();
-      }
-
-      function printTimingSummary() {
-          var keys = [
-              { label: "03 GetSyncTablesbyTableCode",    env: "t_GetSyncTables_ms" },
-              { label: "04 GetChecklistConfiguration",   env: "t_GetChecklistConfiguration_ms" },
-              { label: "05 GetChecklistFormulaDetails",  env: "t_GetChecklistFormulaDetails_ms" },
-              { label: "06 GetAllInternalTablesByMasterID", env: "t_GetAllInternalTables_ms" }
-          ];
-          var lines = ["=== LISTING CLICK - TIMING SUMMARY ==="];
-          var total = 0;
-          for (var i = 0; i < keys.length; i++) {
-              var val = pm.environment.get(keys[i].env);
-              if (val === "SKIPPED") {
-                  lines.push("  " + keys[i].label + ": SKIPPED");
-              } else if (val) {
-                  var ms = parseInt(val);
-                  var s = (ms / 1000).toFixed(2);
-                  total += ms;
-                  lines.push("  " + keys[i].label + ": " + s + " s");
-              } else {
-                  lines.push("  " + keys[i].label + ": (not recorded)");
-              }
-          }
-          lines.push("--------------------------------------");
-          lines.push("  Total: " + (total / 1000).toFixed(2) + " s");
-          lines.push("======================================");
-          console.log(lines.join("\n"));
-      }

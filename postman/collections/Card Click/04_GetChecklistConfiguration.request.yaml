@@ -1,43 +1,66 @@
 $kind: http-request
-name: "04 - GetChecklistConfiguration"
-url: "{{base_url}}/ProInspectorJson.svc/GetChecklistConfiguration?checklistId={{checklistId}}&pageSize=50&startIndex=0&recordCount=0"
+name: 04 - GetChecklistConfiguration
+url: "{{base_url}}/ProInspectorJson.svc/GetChecklistConfiguration?checklistId={\
+  {checklistId}}&pageSizechecklistId=50&startIndex=0&recordCount=0"
 method: GET
 headers:
   Authorization: "{{token}}"
+queryParams:
+  checklistId: "{{checklistId}}"
+  pageSizechecklistId: "50"
+  startIndex: "0"
+  recordCount: "0"
 settings:
   disabledSystemHeaders: []
 order: 1772600000004
 scripts:
   - type: beforeRequest
-    language: text/javascript
-    code: |-
+    code: >-
       // Always start fresh from page 0
+
       pm.environment.set("t_GetChecklistConfiguration_start", Date.now());
-      console.log("[GetChecklistConfiguration] Starting — pageIndex=0, pageSize=50, checklistId=" + pm.environment.get("checklistId"));
-  - type: afterResponse
+
+      console.log("[GetChecklistConfiguration] Starting — pageIndex=0,
+      pageSize=50, checklistId=" + pm.environment.get("checklistId"));
     language: text/javascript
-    code: |-
-      var overallStart = parseInt(pm.environment.get("t_GetChecklistConfiguration_start"));
+  - type: afterResponse
+    code: >-
+      var overallStart =
+      parseInt(pm.environment.get("t_GetChecklistConfiguration_start"));
+
       var baseUrl  = pm.environment.get("base_url");
+
       var token    = pm.environment.get("token");
+
       var checklistId = pm.environment.get("checklistId");
+
       var pageSize = 50;
 
+
       var jsonData = pm.response.json();
+
       var firstPage = jsonData.GetChecklistConfigurationResult || [];
 
+
       // Read total recordCount — check root and first item
+
       var totalRecords = jsonData.RecordCount
           || jsonData.recordCount
           || jsonData.TotalRecordCount
           || (firstPage.length > 0 && (firstPage[0].RecordCount || firstPage[0].recordCount || firstPage[0].TotalCount))
           || 0;
-      console.log("[GetChecklistConfiguration] Page 0 returned " + firstPage.length + " items. Total recordCount=" + totalRecords);
+      console.log("[GetChecklistConfiguration] Page 0 returned " +
+      firstPage.length + " items. Total recordCount=" + totalRecords);
+
 
       // Accumulate ids from first page
+
       var hasFormula = false;
+
       var hasInternalTable = false;
+
       var internalTableIds = [];
+
 
       function processPage(items) {
           for (var i = 0; i < items.length; i++) {
@@ -57,11 +80,16 @@ scripts:
           console.log("[GetChecklistConfiguration] After processing page: hasFormula=" + hasFormula + " hasInternalTable=" + hasInternalTable + " internalTableIds=" + JSON.stringify(internalTableIds));
       }
 
+
       processPage(firstPage);
 
+
       // Calculate remaining pages needed
+
       var totalPages = Math.ceil(totalRecords / pageSize);
+
       var remainingPages = totalPages - 1; // page 0 already fetched
+
 
       if (remainingPages <= 0) {
           finalize();
@@ -98,6 +126,7 @@ scripts:
           }
       }
 
+
       function finalize() {
           var elapsed = Date.now() - overallStart;
           pm.environment.set("t_GetChecklistConfiguration_ms", elapsed);
@@ -112,6 +141,8 @@ scripts:
           console.log("[GetChecklistConfiguration] All pages done in " + (elapsed / 1000).toFixed(2) + " s. HasFormula=" + hasFormula + " HasInternalTable=" + hasInternalTable + " InternalTableIds=" + JSON.stringify(internalTableIds));
       }
 
+
       pm.test("GetChecklistConfiguration - Status 200", function () {
           pm.response.to.have.status(200);
       });
+    language: text/javascript

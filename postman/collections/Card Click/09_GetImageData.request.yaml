@@ -15,9 +15,8 @@ scripts:
       if (hasImages !== "true") {
           console.log("[GetImageData] SKIPPED - no items with images.");
           pm.environment.set("t_GetImageData_ms", "SKIPPED");
-          pm.environment.set("skip_images", "true");
+          pm.execution.skip();
       } else {
-          pm.environment.set("skip_images", "false");
           pm.environment.set("t_GetImageData_start", Date.now());
           console.log("[GetImageData] Request started at: " + new Date().toISOString());
       }

@@ -123,4 +123,19 @@ values:
   - key: userId
     value: 411
     enabled: true
+  - key: businessVerticalId
+    value: '2'
+    enabled: true
+  - key: checklist_executionDetailIds
+    value: ''
+    enabled: true
+  - key: t_GetTaskByListing_ms
+    value: ''
+    enabled: true
+  - key: skip_tasks
+    value: ''
+    enabled: true
+  - key: task_exeId
+    value: '0'
+    enabled: true
 color: 0

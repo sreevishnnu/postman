@@ -26,14 +26,27 @@ scripts:
       var jsonData = pm.response.json();
       var details = jsonData.GetExecutionDetailsByScheduleIDResult || [];
       var imageIds = [];
+      var exeDetailIds = [];
 
       for (var i = 0; i < details.length; i++) {
           var item = details[i];
+          // Collect execution detail IDs for Task service ONLY if task count > 0
+          if (item.dbID > 0 && item.dbTaskCount > 0) {
+              if (exeDetailIds.indexOf(item.dbID) === -1) {
+                  exeDetailIds.push(item.dbID);
+              }
+          }
+          // Collect only IDs with images
           if (item.HasImages === true && item.dbID > 0) {
               if (imageIds.indexOf(item.dbID) === -1) {
                   imageIds.push(item.dbID);
               }
           }
+      }
+
+      pm.environment.set("checklist_executionDetailIds", JSON.stringify(exeDetailIds));
+      if (exeDetailIds.length > 0) {
+          pm.environment.set("task_exeId", String(exeDetailIds[0]));
       }
 
       var baseUrl = pm.environment.get("base_url");
