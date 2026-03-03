@@ -36,14 +36,41 @@ scripts:
           hasImages = (imgIds.length > 0);
       } catch(e) { hasImages = false; }
 
-      if (hasImages) {
-          postman.setNextRequest("10 - GetImageData");
+      // Check if there are more tasks to process
+      var payloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");
+      if (payloads.length > 0) {
+          // Remove the current task from the list
+          payloads.shift();
+          pm.environment.set("checklist_taskInfoPayloads", JSON.stringify(payloads));
+          // If there are still tasks, set the next request to this one
+          if (payloads.length > 0) {
+              console.log("[GetTaskInfoByID] Next taskId: " + String(payloads[0].taskId)); // Corrected from payloads[0].id
+              pm.execution.setNextRequest("09 - GetTaskInfoByID");
+          } else {
+              // All tasks processed, check for images
+              pm.environment.unset("taskInfo_payload"); // This variable name seems inconsistent with checklist_taskInfoPayloads
+              var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+              if (imageIds.length > 0) {
+                  console.log("[GetTaskInfoByID] All tasks done. Jumping to Image Data.");
+                  pm.execution.setNextRequest("10 - GetImageData");
+              } else {
+                  console.log("[GetTaskInfoByID] All tasks done. No images. Jumping to FinalSummary.");
+                  pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus"); // Changed from FinalSummary to match original flow
+              }
+          }
       } else {
-          postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+          // Fallback if payloads was empty initially or somehow missed
+          if (hasImages) {
+              pm.execution.setNextRequest("10 - GetImageData");
+          } else {
+              pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+          }
       }
 
       // Fire additional task info calls in parallel
-      var payloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");
+      // This section seems to duplicate the logic for processing payloads.
+      // It's recommended to refactor to avoid redundancy.
+      // For now, I'll keep it as is, assuming it serves a different purpose (e.g., parallel vs sequential).
       var baseUrl  = pm.environment.get("base_url");
       var token    = pm.environment.get("token");
       

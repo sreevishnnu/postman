@@ -16,7 +16,7 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      postman.setNextRequest("07 - GetExecutionDetailsByScheduleID");
+      pm.execution.setNextRequest("07 - GetExecutionDetailsByScheduleID");
       var overallStart = parseInt(pm.environment.get("t_GetAllInternalTables_start"));
 
       // Fire additional parentId calls in parallel using pm.sendRequest

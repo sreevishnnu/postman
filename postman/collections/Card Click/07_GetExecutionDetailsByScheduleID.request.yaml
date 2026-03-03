@@ -70,11 +70,11 @@ scripts:
 
       // Chaining for Runner
       if (exeDetailIds.length > 0) {
-          postman.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
+          pm.execution.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
       } else if (imageIds.length > 0) {
-          postman.setNextRequest("10 - GetImageData");
+          pm.execution.setNextRequest("10 - GetImageData");
       } else {
-          postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
       }
 
       var elapsed = Date.now() - overallStart;

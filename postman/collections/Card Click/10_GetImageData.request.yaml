@@ -16,7 +16,7 @@ scripts:
   - type: afterResponse
     language: text/javascript
     code: |-
-      postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+      pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
       var overallStart = parseInt(pm.environment.get("t_GetImageData_start"));
 
       // Fire additional image calls in parallel using pm.sendRequest
@@ -57,8 +57,12 @@ scripts:
                   if (pending === 0) {
                       var totalElapsed = Date.now() - overallStart;
                       pm.environment.set("t_GetImageData_ms", totalElapsed);
-                      console.log("[GetImageData] All image calls completed in " + (totalElapsed / 1000).toFixed(2) + " s");
-                  }
+                      console.log("[GetImageData] Next imageId: " + String(imageIds[0]));
+          pm.execution.setNextRequest("10 - GetImageData");
+      } else {
+          pm.environment.unset("image_exeId");
+          pm.execution.setNextRequest("11 - FinalSummary");
+      }
               });
           })(remaining[i]);
       }

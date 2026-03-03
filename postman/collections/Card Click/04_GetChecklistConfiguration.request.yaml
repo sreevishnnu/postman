@@ -1,13 +1,12 @@
 $kind: http-request
 name: 04 - GetChecklistConfiguration
-url: "{{base_url}}/ProInspectorJson.svc/GetChecklistConfiguration?checklistId={\
-  {checklistId}}&pageSizechecklistId=50&startIndex=0&recordCount=0"
+url: "{{base_url}}/ProInspectorJson.svc/GetChecklistConfiguration"
 method: GET
 headers:
   Authorization: "{{token}}"
 queryParams:
   checklistId: "{{checklistId}}"
-  pageSizechecklistId: "50"
+  pageSize: "50"
   startIndex: "0"
   recordCount: "0"
 settings:
@@ -56,10 +55,37 @@ scripts:
       // Accumulate ids from first page
 
       var hasFormula = false;
-
       var hasInternalTable = false;
-
       var internalTableIds = [];
+      var seenUrls = {};
+      var activeDownloads = 0;
+      var isAllPagesDone = false;
+
+      function checkReadyToChain() {
+          if (!isAllPagesDone || activeDownloads > 0) return;
+          completeAll();
+      }
+
+      function downloadImage(url) {
+          if (!url || url.trim() === "" || seenUrls[url]) return;
+          seenUrls[url] = true;
+          activeDownloads++;
+          
+          var imgStart = Date.now();
+          pm.sendRequest({
+              url: url,
+              method: "GET"
+          }, function(err, res) {
+              var imgElapsed = Date.now() - imgStart;
+              if (err) {
+                  console.error("[GetChecklistConfiguration] Image ERROR: " + url + " | " + err);
+              } else {
+                  console.log("[GetChecklistConfiguration] Image Downloaded: " + url + " | " + res.code + " | " + (imgElapsed / 1000).toFixed(2) + " s");
+              }
+              activeDownloads--;
+              checkReadyToChain();
+          });
+      }
 
 
       function processPage(items) {
@@ -74,10 +100,13 @@ scripts:
                   if (internalTableIds.indexOf(idStr) === -1) {
                       internalTableIds.push(idStr);
                   }
-                  console.log("[GetChecklistConfiguration] IN item found — dbID_InternalTable=" + idStr);
+              }
+              // Immediate download in each request
+              if (item.dbAlert_image_Url) {
+                  downloadImage(item.dbAlert_image_Url);
               }
           }
-          console.log("[GetChecklistConfiguration] After processing page: hasFormula=" + hasFormula + " hasInternalTable=" + hasInternalTable + " internalTableIds=" + JSON.stringify(internalTableIds));
+          console.log("[GetChecklistConfiguration] Processed page. activeDownloads=" + activeDownloads);
       }
 
 
@@ -92,7 +121,8 @@ scripts:
 
 
       if (remainingPages <= 0) {
-          finalize();
+          isAllPagesDone = true;
+          checkReadyToChain();
       } else {
           var completed = 0;
           for (var p = 1; p <= remainingPages; p++) {
@@ -119,7 +149,8 @@ scripts:
                       }
                       completed++;
                       if (completed === remainingPages) {
-                          finalize();
+                          isAllPagesDone = true;
+                          checkReadyToChain();
                       }
                   });
               })(p);
@@ -127,7 +158,7 @@ scripts:
       }
 
 
-      function finalize() {
+      function completeAll() {
           var elapsed = Date.now() - overallStart;
           pm.environment.set("t_GetChecklistConfiguration_ms", elapsed);
 
@@ -138,15 +169,15 @@ scripts:
               pm.environment.set("internalTable_parentId", String(internalTableIds[0]));
           }
 
-          console.log("[GetChecklistConfiguration] All pages done in " + (elapsed / 1000).toFixed(2) + " s. HasFormula=" + hasFormula + " HasInternalTable=" + hasInternalTable + " InternalTableIds=" + JSON.stringify(internalTableIds));
+          console.log("[GetChecklistConfiguration] COMPLETE. Pages Done, Images Done. Total time: " + (elapsed / 1000).toFixed(2) + " s");
 
           // Chaining for Runner
           if (hasFormula) {
-              postman.setNextRequest("05 - GetChecklistFormulaDetails");
+              pm.execution.setNextRequest("05 - GetChecklistFormulaDetails");
           } else if (hasInternalTable) {
-              postman.setNextRequest("06 - GetAllInternalTablesByMasterID");
+              pm.execution.setNextRequest("06 - GetAllInternalTablesByMasterID");
           } else {
-              postman.setNextRequest("07 - GetExecutionDetailsByScheduleID");
+              pm.execution.setNextRequest("07 - GetExecutionDetailsByScheduleID");
           }
       }
 

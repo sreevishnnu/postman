@@ -34,4 +34,4 @@ scripts:
       console.log("[ValidateLoginToken] token set. clientId=" + result.EnterpriseId + " userId=" + result.UserID + " languageId=" + result.LanguageID + " verticalId=" + result.VerticalId);
 
       // Chaining to GetEnterpriseSettings
-      postman.setNextRequest("02 - GetEnterpriseSettings");
+      pm.execution.setNextRequest("02 - GetEnterpriseSettings");

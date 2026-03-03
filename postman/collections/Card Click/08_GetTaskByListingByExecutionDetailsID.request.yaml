@@ -118,20 +118,20 @@ scripts:
           console.log("[GetTaskByListing] All task calls completed in " + (totalElapsed / 1000).toFixed(2) + " s. Total tasks found: " + taskPayloads.length);
 
           // Chaining for Runner
-          if (taskPayloads.length > 0) {
-              postman.setNextRequest("09 - GetTaskInfoByID");
+          console.log("[GetTaskByListing] Next exeId: " + String(exeIds[0]));
+          pm.execution.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
+      } else {
+          pm.environment.unset("image_exeId");
+          var payloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");
+          if (payloads.length > 0) {
+              console.log("[GetTaskByListing] All listings done. Jumping to Task Info.");
+              pm.execution.setNextRequest("09 - GetTaskInfoByID");
           } else {
-              var rawImgs = pm.environment.get("checklist_imageIds");
-              var hasImages = false;
-              try {
-                  var imgIds = JSON.parse(rawImgs || "[]");
-                  hasImages = (imgIds.length > 0);
-              } catch(e) { hasImages = false; }
-              
-              if (hasImages) {
-                  postman.setNextRequest("10 - GetImageData");
+              var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
+              if (imageIds.length > 0) {
+                  pm.execution.setNextRequest("10 - GetImageData");
               } else {
-                  postman.setNextRequest("11 - UpdateofflineInspectionStatus");
+                  pm.execution.setNextRequest("11 - FinalSummary");
               }
           }
       }

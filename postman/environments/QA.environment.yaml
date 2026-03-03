@@ -124,7 +124,7 @@ values:
     value: 411
     enabled: true
   - key: businessVerticalId
-    value: '2'
+    value: 1
     enabled: true
   - key: checklist_executionDetailIds
     value: ''
