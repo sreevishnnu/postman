@@ -28,8 +28,12 @@ scripts:
       var imageIds = [];
       var exeDetailIds = [];
 
+      var totalTaskCount = 0;
       for (var i = 0; i < details.length; i++) {
           var item = details[i];
+          if (item.dbTaskCount > 0) {
+              totalTaskCount += item.dbTaskCount;
+          }
           // Collect execution detail IDs for Task service ONLY if task count > 0
           if (item.dbID > 0 && item.dbTaskCount > 0) {
               if (exeDetailIds.indexOf(item.dbID) === -1) {
@@ -59,11 +63,13 @@ scripts:
       pm.environment.set("checklist_hasImages", pending > 0 ? "true" : "false");
       pm.environment.set("checklist_imageIds", JSON.stringify(imageIds));
 
+      console.log("[GetExecutionDetails] Total records from server: " + details.length);
+      console.log("[GetExecutionDetails]   - Total Tasks to fetch: " + totalTaskCount);
+      console.log("[GetExecutionDetails]   - Image-ready records: " + imageIds.length);
+
       if (pending > 0) {
           pm.environment.set("image_exeId", String(imageIds[0]));
-          console.log("[GetExecutionDetails] Found " + pending + " items with images. Saved for next request.");
       } else {
-          console.log("[GetExecutionDetailsByScheduleID] No images to fetch.");
           pm.environment.set("image_exeId", "0");
           pm.environment.set("t_GetImageData_ms", "SKIPPED");
       }
