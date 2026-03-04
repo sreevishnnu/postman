@@ -73,10 +73,10 @@ scripts:
                       console.error("[GetAllSubTasksListPagingFO] ERROR for taskId=" + taskId + ": " + err);
                   } else {
                       try {
-                          var subTasks = res.json().GetAllSubTasksListPagingFOResult || [];
+                          var rawResult = res.json().GetAllSubTasksListPagingFOResult;
+                          var subTasks = typeof rawResult === 'string' ? JSON.parse(rawResult || "[]") : (rawResult || []);
                           console.log("[GetAllSubTasksListPagingFO] taskId=" + taskId + " => " + subTasks.length + " sub-tasks.");
                       } catch(e) {
-                          console.error("[GetAllSubTasksListPagingFO] Parse error for taskId=" + taskId + ": " + e);
                       }
                   }
 

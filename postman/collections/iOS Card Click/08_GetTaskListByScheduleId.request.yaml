@@ -27,7 +27,7 @@ scripts:
           pm.environment.set("tasklist_pageIndex", "0");
           pm.environment.set("tasklist_recordCount", "0");
           pm.environment.set("tasklist_accumulated", "[]");
-          console.log("[GetTaskListByScheduleId] Starting — pageIndex=0, pageSize=50, scheduleId=" + pm.environment.get("scheduleID"));
+          console.log("[GetTaskListByScheduleId] Starting — offset=0, pageSize=50, scheduleId=" + pm.environment.get("scheduleID"));
       } else {
           console.log("[GetTaskListByScheduleId] Fetching pageIndex=" + pageIndex);
       }
@@ -49,8 +49,8 @@ scripts:
 
       // Fallback: if recordCount still unknown but page was full, assume more pages exist
       if (totalRecords === 0 && items.length === pageSize) {
-          totalRecords = 999;
-          pm.environment.set("tasklist_recordCount", "999");
+          totalRecords = 0;
+          pm.environment.set("tasklist_recordCount", "0");
           console.log("[GetTaskListByScheduleId] recordCount missing — assuming more pages.");
       }
 
@@ -65,7 +65,9 @@ scripts:
               try {
                   var taskList = JSON.parse(item.TaskData);
                   taskList.forEach(function(t) {
-                      if (t.ID) { accumulated.push(t.ID); }
+                      if (t.ID && accumulated.indexOf(t.ID) === -1) { 
+                          accumulated.push(t.ID); 
+                      }
                   });
               } catch(e) {
                   console.error("[GetTaskListByScheduleId] Error parsing TaskData: " + e.message);
@@ -74,21 +76,21 @@ scripts:
       });
       pm.environment.set("tasklist_accumulated", JSON.stringify(accumulated));
 
-      var currentPage = parseInt(pm.environment.get("tasklist_pageIndex") || "0");
-      var fetchedSoFar = (currentPage + 1) * pageSize;
+      var currentOffset = parseInt(pm.environment.get("tasklist_pageIndex") || "0");
+      var fetchedSoFar = currentOffset + items.length;
       var hasMore = items.length === pageSize && fetchedSoFar < totalRecords;
 
       if (hasMore) {
-          // Loop back to fetch next page
-          pm.environment.set("tasklist_pageIndex", String(currentPage + 1));
-          console.log("[GetTaskListByScheduleId] More pages — looping to pageIndex=" + (currentPage + 1));
+          // Loop back to fetch next page starting at the next offset (50, 100, etc.)
+          pm.environment.set("tasklist_pageIndex", String(currentOffset + pageSize));
+          console.log("[GetTaskListByScheduleId] More pages — looping to next offset=" + (currentOffset + pageSize));
           pm.execution.setNextRequest("08 - GetTaskListByScheduleId");
       } else {
           // All pages done — save final result and clean up
           pm.environment.set("checklist_taskIds", pm.environment.get("tasklist_accumulated"));
           pm.environment.set("t_GetTaskListByScheduleId_ms", Date.now() - overallStart);
-          pm.environment.unset("tasklist_pageIndex");
-          pm.environment.unset("tasklist_recordCount");
+          pm.environment.set("tasklist_pageIndex", "0");
+          pm.environment.set("tasklist_recordCount", "0");
           pm.environment.unset("tasklist_accumulated");
 
           console.log("[GetTaskListByScheduleId] All pages done. Total taskIds: " + accumulated.length);
