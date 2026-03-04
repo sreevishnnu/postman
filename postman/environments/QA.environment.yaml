@@ -4,7 +4,7 @@ values:
     value: 'https://qa.pro-inspector.net/V4-WCF'
     enabled: true
   - key: token
-    value: d9c686d6-c500-4467-8ba4-315f4854caef
+    value: 2bb92f3e-4905-4d01-98c3-40fcbfb2393b
     enabled: true
   - key: scheduleID
     value: '336340'
@@ -70,7 +70,7 @@ values:
     value: ''
     enabled: true
   - key: checklistId
-    value: '17'
+    value: '23'
     enabled: true
   - key: internalTable_parentId
     value: ''
@@ -118,7 +118,7 @@ values:
     value: '412'
     enabled: true
   - key: businessVerticalId
-    value: '3'
+    value: '2'
     enabled: true
   - key: checklist_executionDetailIds
     value: ''
@@ -130,22 +130,22 @@ values:
     value: ''
     enabled: true
   - key: task_exeId
-    value: '0'
+    value: '16228674'
     enabled: true
   - key: attFamily
     value: '0'
     enabled: true
   - key: task_info_taskId
-    value: '0'
+    value: '24453'
     enabled: true
   - key: task_info_exeId
-    value: '0'
+    value: '16228674'
     enabled: true
   - key: checklist_taskInfoPayloads
-    value: '[]'
+    value: '[{"taskId":24453,"exeId":16228674},{"taskId":24452,"exeId":16228674},{"taskId":24455,"exeId":16228690},{"taskId":24454,"exeId":16228690},{"taskId":24457,"exeId":16228692},{"taskId":24463,"exeId":16228706},{"taskId":24462,"exeId":16228703},{"taskId":24461,"exeId":16228703},{"taskId":24464,"exeId":16228709},{"taskId":24466,"exeId":16228711},{"taskId":24460,"exeId":16228702},{"taskId":24493,"exeId":16228742},{"taskId":24494,"exeId":16228744},{"taskId":24496,"exeId":16228746},{"taskId":24475,"exeId":16228721},{"taskId":24467,"exeId":16228712},{"taskId":24482,"exeId":16228728},{"taskId":24470,"exeId":16228715},{"taskId":24490,"exeId":16228738},{"taskId":24486,"exeId":16228733},{"taskId":24477,"exeId":16228723},{"taskId":24487,"exeId":16228734},{"taskId":24483,"exeId":16228729},{"taskId":24480,"exeId":16228726},{"taskId":24479,"exeId":16228725},{"taskId":24459,"exeId":16228701},{"taskId":24485,"exeId":16228732},{"taskId":24471,"exeId":16228717},{"taskId":24515,"exeId":16228769},{"taskId":24517,"exeId":16228771},{"taskId":24495,"exeId":16228745},{"taskId":24512,"exeId":16228766},{"taskId":24501,"exeId":16228752},{"taskId":24513,"exeId":16228767},{"taskId":24504,"exeId":16228757},{"taskId":24498,"exeId":16228748},{"taskId":24503,"exeId":16228754},{"taskId":24508,"exeId":16228761},{"taskId":24492,"exeId":16228740},{"taskId":24514,"exeId":16228768},{"taskId":24507,"exeId":16228760},{"taskId":24474,"exeId":16228720},{"taskId":24472,"exeId":16228718},{"taskId":24484,"exeId":16228731},{"taskId":24506,"exeId":16228759},{"taskId":24505,"exeId":16228758},{"taskId":24502,"exeId":16228753},{"taskId":24469,"exeId":16228714},{"taskId":24481,"exeId":16228727},{"taskId":24478,"exeId":16228724},{"taskId":24500,"exeId":16228751},{"taskId":24518,"exeId":16228747},{"taskId":24497,"exeId":16228747},{"taskId":24489,"exeId":16228736},{"taskId":24456,"exeId":16228691},{"taskId":24499,"exeId":16228750},{"taskId":24511,"exeId":16228764},{"taskId":24488,"exeId":16228735},{"taskId":24468,"exeId":16228713},{"taskId":24510,"exeId":16228763},{"taskId":24491,"exeId":16228739},{"taskId":24476,"exeId":16228722},{"taskId":24516,"exeId":16228770},{"taskId":24473,"exeId":16228719},{"taskId":24509,"exeId":16228762},{"taskId":24465,"exeId":16228710}]'
     enabled: true
   - key: t_GetTaskInfo_ms
-    value: ' '
+    value: '34515'
     enabled: true
   - key: t_GetSyncTables_ms
     value: ''
@@ -178,6 +178,9 @@ values:
     value: '0'
     enabled: true
   - key: current_taskId
+    value: '24518'
+    enabled: true
+  - key: image_exeId
     value: '0'
     enabled: true
 color: 0

@@ -73,7 +73,7 @@ scripts:
 
                   completed++;
                   if (completed === total) {
-                      pm.environment.unset("image_exeId");
+                      pm.environment.set("image_exeId", "0");
                       pm.environment.set("t_GetImageData_ms", Date.now() - overallStart);
                       console.log("[GetImageData] All " + total + " parallel calls done.");
                       pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");

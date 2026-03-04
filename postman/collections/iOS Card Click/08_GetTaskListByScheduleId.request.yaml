@@ -87,8 +87,8 @@ scripts:
           // All pages done — save final result and clean up
           pm.environment.set("checklist_taskIds", pm.environment.get("tasklist_accumulated"));
           pm.environment.set("t_GetTaskListByScheduleId_ms", Date.now() - overallStart);
-          pm.environment.unset("tasklist_pageIndex");
-          pm.environment.unset("tasklist_recordCount");
+          pm.environment.set("tasklist_pageIndex", "0");
+          pm.environment.set("tasklist_recordCount", "0");
           pm.environment.unset("tasklist_accumulated");
 
           console.log("[GetTaskListByScheduleId] All pages done. Total taskIds: " + accumulated.length);
