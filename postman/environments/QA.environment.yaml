@@ -177,9 +177,6 @@ values:
   - key: tasklist_recordCount
     value: '0'
     enabled: true
-  - key: current_taskId
-    value: '24518'
-    enabled: true
   - key: image_exeId
     value: '0'
     enabled: true
