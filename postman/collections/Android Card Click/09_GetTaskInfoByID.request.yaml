@@ -22,41 +22,85 @@ scripts:
     language: text/javascript
     code: |-
       pm.environment.set("t_GetTaskInfo_start", Date.now());
-      console.log("[GetTaskInfoByID] Request started at: " + new Date().toISOString());
+      console.log("[GetTaskInfoByID] Parallel async started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
       var overallStart = parseInt(pm.environment.get("t_GetTaskInfo_start"));
 
-      // Queue management — remove the task we just processed
       var payloads = [];
       try {
           payloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");
       } catch(e) { payloads = []; }
 
-      if (payloads.length > 0) {
-          payloads.shift();
-      }
-      pm.environment.set("checklist_taskInfoPayloads", JSON.stringify(payloads));
-      pm.environment.set("t_GetTaskInfo_ms", Date.now() - overallStart);
-
-      // Iterative chaining
-      if (payloads.length > 0) {
-          pm.environment.set("task_info_taskId", String(payloads[0].taskId));
-          pm.environment.set("task_info_exeId",  String(payloads[0].exeId));
-          console.log("[GetTaskInfoByID] Moving to next taskId: " + payloads[0].taskId);
-          pm.execution.setNextRequest("09 - GetTaskInfoByID");
-      } else {
-          // All tasks done — move to images or finish
+      if (payloads.length === 0) {
+          console.log("[GetTaskInfoByID] No task payloads to process. Skipping.");
+          pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
           var imageIds = [];
           try { imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]"); } catch(e) {}
           if (imageIds.length > 0) {
-              console.log("[GetTaskInfoByID] All tasks done. Jumping to Image Data.");
               pm.execution.setNextRequest("10 - GetImageData");
           } else {
-              console.log("[GetTaskInfoByID] All tasks done. No images. Jumping to UpdateofflineInspectionStatus.");
               pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
           }
+          return;
+      }
+
+      var baseUrl = pm.environment.get("base_url");
+      var clientId = pm.environment.get("clientId");
+      var languageId = pm.environment.get("languageId");
+      var verticalId = pm.environment.get("verticalId");
+      var attFamily = pm.environment.get("attFamily");
+      var businessVerticalId = pm.environment.get("businessVerticalId");
+      var userId = pm.environment.get("userId");
+      var token = pm.environment.get("token");
+
+      var completed = 0;
+      var total = payloads.length;
+
+      console.log("[GetTaskInfoByID] Firing all " + total + " requests in parallel.");
+
+      // Fire all at once — no waiting
+      for (var i = 0; i < payloads.length; i++) {
+          (function(p) {
+              var url = baseUrl + "/TaskManager.svc/GetTaskInfoByID"
+                  + "?clientId=" + clientId
+                  + "&languageId=" + languageId
+                  + "&verticalId=" + verticalId
+                  + "&attFamily=" + attFamily
+                  + "&taskId=" + p.taskId
+                  + "&executionDetailsID=" + p.exeId
+                  + "&businessVerticalId=" + businessVerticalId
+                  + "&userId=" + userId
+                  + "&isIPAD=false";
+
+              pm.sendRequest({
+                  url: url,
+                  method: "GET",
+                  header: { "Authorization": token }
+              }, function(err, res) {
+                  if (err) {
+                      console.error("[GetTaskInfoByID] ERROR for taskId=" + p.taskId + ": " + err);
+                  } else {
+                      console.log("[GetTaskInfoByID] Done taskId=" + p.taskId + " (Status: " + res.code + ")");
+                  }
+
+                  completed++;
+                  if (completed === total) {
+                      pm.environment.set("t_GetTaskInfo_ms", Date.now() - overallStart);
+                      console.log("[GetTaskInfoByID] All " + total + " parallel calls done.");
+                      var imageIds = [];
+                      try { imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]"); } catch(e) {}
+                      if (imageIds.length > 0) {
+                          console.log("[GetTaskInfoByID] Moving to GetImageData.");
+                          pm.execution.setNextRequest("10 - GetImageData");
+                      } else {
+                          console.log("[GetTaskInfoByID] No images. Moving to UpdateofflineInspectionStatus.");
+                          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+                      }
+                  }
+              });
+          })(payloads[i]);
       }
 
       pm.test("GetTaskInfoByID - Status 200", function () {

@@ -21,78 +21,96 @@ scripts:
     language: text/javascript
     code: |-
       pm.environment.set("t_GetTaskByListing_start", Date.now());
-      console.log("[GetTaskByListing] Request started at: " + new Date().toISOString());
+      console.log("[GetTaskByListing] Parallel async started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
       var overallStart = parseInt(pm.environment.get("t_GetTaskByListing_start"));
 
-      // Load accumulated payloads from previous iterations (sequential loop)
-      var taskPayloads = [];
-      try {
-          taskPayloads = JSON.parse(pm.environment.get("checklist_taskInfoPayloads") || "[]");
-      } catch(e) { taskPayloads = []; }
-
-      // Parse this iteration's response
-      var currentExeId = pm.environment.get("task_exeId");
-      console.log("[GetTaskByListing] Processing exeId: " + currentExeId);
-      try {
-          var resultStr = pm.response.json().GetTaskByListingByExecutionDetailsIDResult;
-          if (resultStr) {
-              var tasks = JSON.parse(resultStr);
-              for (var j = 0; j < tasks.length; j++) {
-                  taskPayloads.push({
-                      taskId: tasks[j].hdn_TaskId,
-                      exeId: currentExeId
-                  });
-              }
-              console.log("[GetTaskByListing] exeId=" + currentExeId + " => " + tasks.length + " tasks found.");
-          }
-      } catch(e) {
-          console.error("[GetTaskByListing] Error parsing tasks for exeId=" + currentExeId + ": " + e);
-      }
-
-      // Save accumulated payloads back to environment
-      pm.environment.set("checklist_taskInfoPayloads", JSON.stringify(taskPayloads));
-
-      // Queue management — remove the ID we just processed
       var exeIds = [];
       try {
           exeIds = JSON.parse(pm.environment.get("checklist_executionDetailIds") || "[]");
       } catch(e) { exeIds = []; }
 
-      if (exeIds.length > 0) {
-          exeIds.shift();
-      }
-      pm.environment.set("checklist_executionDetailIds", JSON.stringify(exeIds));
-      pm.environment.set("t_GetTaskByListing_ms", Date.now() - overallStart);
-
-      // Iterative chaining
-      if (exeIds.length > 0) {
-          pm.environment.set("task_exeId", String(exeIds[0]));
-          console.log("[GetTaskByListing] Moving to next exeId: " + exeIds[0]);
-          pm.execution.setNextRequest("08 - GetTaskByListingByExecutionDetailsID");
-      } else {
-          // All exeIds processed — set up task info queue and move on
-          console.log("[GetTaskByListing] All exeIds processed. Total tasks found: " + taskPayloads.length);
-          if (taskPayloads.length > 0) {
-              pm.environment.set("task_info_taskId", String(taskPayloads[0].taskId));
-              pm.environment.set("task_info_exeId",  String(taskPayloads[0].exeId));
-              // No setNextRequest — natural Runner order goes to 09.
-              // If 09 is unchecked, Postman will skip it and move to the next enabled request.
-              console.log("[GetTaskByListing] All exeIds done. Proceeding to GetTaskInfoByID.");
+      if (exeIds.length === 0) {
+          console.log("[GetTaskByListing] No executionDetailIds to process. Skipping.");
+          pm.environment.set("t_GetTaskByListing_ms", "SKIPPED");
+          pm.environment.set("task_info_taskId", "0");
+          pm.environment.set("task_info_exeId", "0");
+          pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
+          var imageIds = [];
+          try { imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]"); } catch(e) {}
+          if (imageIds.length > 0) {
+              pm.execution.setNextRequest("10 - GetImageData");
           } else {
-              pm.environment.set("task_info_taskId", "0");
-              pm.environment.set("task_info_exeId",  "0");
-              pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
-              var imageIds = [];
-              try { imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]"); } catch(e) {}
-              if (imageIds.length > 0) {
-                  pm.execution.setNextRequest("10 - GetImageData");
-              } else {
-                  pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
-              }
+              pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
           }
+          return;
+      }
+
+      var baseUrl = pm.environment.get("base_url");
+      var clientId = pm.environment.get("clientId");
+      var userId = pm.environment.get("userId");
+      var businessVerticalId = pm.environment.get("businessVerticalId");
+      var verticalId = pm.environment.get("verticalId");
+      var token = pm.environment.get("token");
+
+      var taskPayloads = [];
+      var completed = 0;
+      var total = exeIds.length;
+
+      console.log("[GetTaskByListing] Firing all " + total + " requests in parallel.");
+
+      // Fire all at once — no waiting
+      for (var i = 0; i < exeIds.length; i++) {
+          (function(exeId) {
+              var url = baseUrl + "/ProInspectorJson.svc/GetTaskByListingByExecutionDetailsID"
+                  + "?clientId=" + clientId
+                  + "&userId=" + userId
+                  + "&businessVerticalsId=" + businessVerticalId
+                  + "&executionDetailsId=" + exeId
+                  + "&verticalId=" + verticalId
+                  + "&pageSize=100&pageIndex=0&recordCount=0";
+
+              pm.sendRequest({
+                  url: url,
+                  method: "GET",
+                  header: { "Authorization": token }
+              }, function(err, res) {
+                  if (err) {
+                      console.error("[GetTaskByListing] ERROR for exeId=" + exeId + ": " + err);
+                  } else {
+                      try {
+                          var resultStr = res.json().GetTaskByListingByExecutionDetailsIDResult;
+                          if (resultStr) {
+                              var tasks = JSON.parse(resultStr);
+                              tasks.forEach(function(t) {
+                                  taskPayloads.push({ taskId: t.hdn_TaskId, exeId: exeId });
+                              });
+                              console.log("[GetTaskByListing] exeId=" + exeId + " => " + tasks.length + " tasks.");
+                          }
+                      } catch(e) {
+                          console.error("[GetTaskByListing] Parse error for exeId=" + exeId + ": " + e);
+                      }
+                  }
+
+                  completed++;
+                  if (completed === total) {
+                      pm.environment.set("checklist_taskInfoPayloads", JSON.stringify(taskPayloads));
+                      pm.environment.set("t_GetTaskByListing_ms", Date.now() - overallStart);
+                      console.log("[GetTaskByListing] All " + total + " parallel calls done. Total tasks: " + taskPayloads.length);
+
+                      if (taskPayloads.length > 0) {
+                          pm.environment.set("task_info_taskId", String(taskPayloads[0].taskId));
+                          pm.environment.set("task_info_exeId", String(taskPayloads[0].exeId));
+                      } else {
+                          pm.environment.set("task_info_taskId", "0");
+                          pm.environment.set("task_info_exeId", "0");
+                          pm.environment.set("t_GetTaskInfo_ms", "SKIPPED");
+                      }
+                  }
+              });
+          })(exeIds[i]);
       }
 
       pm.test("GetTaskByListing - Status 200", function () {
