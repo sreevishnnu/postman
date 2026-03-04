@@ -171,4 +171,13 @@ values:
   - key: t_GetTaskInfo_start
     value: ''
     enabled: true
+  - key: tasklist_pageIndex
+    value: '0'
+    enabled: true
+  - key: tasklist_recordCount
+    value: '0'
+    enabled: true
+  - key: current_taskId
+    value: '0'
+    enabled: true
 color: 0

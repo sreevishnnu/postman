@@ -10,35 +10,91 @@ scripts:
     language: text/javascript
     code: |-
       pm.environment.set("t_GetAllSubTasks_start", Date.now());
-      console.log("[GetAllSubTasksListPagingFO] Requesting for taskId: " + pm.environment.get("current_taskId"));
+
+      // Ensure current_taskId is set from the queue before the URL fires
+      var taskIds = [];
+      try { taskIds = JSON.parse(pm.environment.get("checklist_taskIds") || "[]"); } catch(e) {}
+      if (taskIds.length > 0) {
+          pm.environment.set("current_taskId", String(taskIds[0]));
+      }
+
+      console.log("[GetAllSubTasksListPagingFO] Parallel async started at: " + new Date().toISOString());
   - type: afterResponse
     language: text/javascript
     code: |-
       var overallStart = parseInt(pm.environment.get("t_GetAllSubTasks_start"));
-      var jsonData = pm.response.json();
-      var subTasks = jsonData.GetAllSubTasksListPagingFOResult || [];
-      
-      console.log("[GetAllSubTasksListPagingFO] Received " + subTasks.length + " sub-tasks.");
-      
-      var taskIds = JSON.parse(pm.environment.get("checklist_taskIds") || "[]");
-      if (taskIds.length > 0) {
-          taskIds.shift();
-      }
-      pm.environment.set("checklist_taskIds", JSON.stringify(taskIds));
-      pm.environment.set("t_GetAllSubTasks_ms", Date.now() - overallStart);
 
-      if (taskIds.length > 0) {
-          pm.environment.set("current_taskId", String(taskIds[0]));
-          pm.execution.setNextRequest("09 - GetAllSubTasksListPagingFO");
-      } else {
-          pm.environment.unset("current_taskId");
-          var imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]");
-          console.log("[GetAllSubTasksListPagingFO] Flow complete. Chaining based on imageIds: " + imageIds.length);
+      var taskIds = [];
+      try {
+          taskIds = JSON.parse(pm.environment.get("checklist_taskIds") || "[]");
+      } catch(e) { taskIds = []; }
+
+      if (taskIds.length === 0) {
+          console.log("[GetAllSubTasksListPagingFO] No taskIds to process. Skipping.");
+          pm.environment.set("t_GetAllSubTasks_ms", "SKIPPED");
+          var imageIds = [];
+          try { imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]"); } catch(e) {}
           if (imageIds.length > 0) {
               pm.execution.setNextRequest("10 - GetImageData");
           } else {
               pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
           }
+          return;
+      }
+
+      var baseUrl = pm.environment.get("base_url");
+      var clientId = pm.environment.get("clientId");
+      var verticalId = pm.environment.get("verticalId");
+      var token = pm.environment.get("token");
+
+      var completed = 0;
+      var total = taskIds.length;
+
+      console.log("[GetAllSubTasksListPagingFO] Firing all " + total + " requests in parallel.");
+
+      // Fire all at once — no waiting
+      for (var i = 0; i < taskIds.length; i++) {
+          (function(taskId) {
+              var url = baseUrl + "/TaskManager.svc/GetAllSubTasksListPagingFO"
+                  + "?verticalId=" + verticalId
+                  + "&pageSize=100"
+                  + "&filterCondition="
+                  + "&sortingOrder="
+                  + "&clientId=" + clientId
+                  + "&taskId=" + taskId
+                  + "&pageIndex=0&recordCount=0";
+
+              pm.sendRequest({
+                  url: url,
+                  method: "GET",
+                  header: { "Authorization": token }
+              }, function(err, res) {
+                  if (err) {
+                      console.error("[GetAllSubTasksListPagingFO] ERROR for taskId=" + taskId + ": " + err);
+                  } else {
+                      try {
+                          var subTasks = res.json().GetAllSubTasksListPagingFOResult || [];
+                          console.log("[GetAllSubTasksListPagingFO] taskId=" + taskId + " => " + subTasks.length + " sub-tasks.");
+                      } catch(e) {
+                          console.error("[GetAllSubTasksListPagingFO] Parse error for taskId=" + taskId + ": " + e);
+                      }
+                  }
+
+                  completed++;
+                  if (completed === total) {
+                      pm.environment.unset("current_taskId");
+                      pm.environment.set("t_GetAllSubTasks_ms", Date.now() - overallStart);
+                      console.log("[GetAllSubTasksListPagingFO] All " + total + " parallel calls done.");
+                      var imageIds = [];
+                      try { imageIds = JSON.parse(pm.environment.get("checklist_imageIds") || "[]"); } catch(e) {}
+                      if (imageIds.length > 0) {
+                          pm.execution.setNextRequest("10 - GetImageData");
+                      } else {
+                          pm.execution.setNextRequest("11 - UpdateofflineInspectionStatus");
+                      }
+                  }
+              });
+          })(taskIds[i]);
       }
 
       pm.test("Status 200", function () {
